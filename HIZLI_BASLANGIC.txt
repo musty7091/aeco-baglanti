@@ -1,0 +1,24 @@
+AECO BAĞLANTILI SATIŞ v1.7.1 — HIZLI BAŞLANGIÇ
+
+TEMİZ KURULUM
+1. ZIP içeriğini C:\aeco-baglanti klasörüne çıkarın.
+2. SETUP_WINDOWS.bat dosyasını çalıştırın. Eski demo veritabanı varsa otomatik yedeklenip temiz şema kurulur.
+3. DEMO_VERI_OLUSTUR.bat dosyasını çalıştırın.
+4. RUN_WINDOWS.bat dosyasını açın.
+
+DEMO GİRİŞİ
+Kullanıcı: demo_admin
+Şifre: Demo1234!
+
+TELEFONDAN KULLANIM
+1. Bilgisayar ve telefon aynı Wi-Fi ağına bağlı olmalıdır.
+2. MOBIL_ERISIM_IZNI.bat dosyasını bir kez yönetici olarak çalıştırın.
+3. RUN_MOBILE_LAN.bat penceresinde gösterilen HTTP adresini telefonda açın.
+
+FATURA EKİ
+- PDF, JPG, JPEG ve PNG yüklenebilir.
+- Bilgisayarda Tarayıcıdan Tara ile WIA cihazından çok sayfalı tek PDF oluşturulabilir.
+- Telefonda fiziksel Windows tarayıcısı kullanılamaz; Dosyadan Seç veya kamera yüklemesi kullanılabilir.
+
+MÜŞTERİ KODU
+Yeni müşterinin kodu kullanıcıdan istenmez. Sistem MUS-00001 biçiminde otomatik üretir.

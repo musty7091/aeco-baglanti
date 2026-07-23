@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block page_title %}Ürünler{% endblock %}
+{% block page_subtitle %}Ürünler barkodla tanımlanır ve tüm miktarlar adet olarak takip edilir{% endblock %}
+{% block top_actions %}
+  {% if access.can_manage_products %}
+  <a class="btn btn-light desktop-only" href="{% url 'data_import' 'products' %}">Excel Aktar</a>
+  <a class="btn btn-primary" href="{% url 'product_create' %}">＋ Yeni Ürün</a>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<form class="filter-bar">
+  <div class="search-box"><span>⌕</span><input name="q" value="{{ q }}" autocomplete="off" inputmode="numeric" placeholder="Barkod okutun veya ürün adı arayın"><button>Ara</button></div>
+  {% if access.can_export_products %}<a class="btn btn-light" href="{% url 'data_export' 'products' %}">Excel</a>{% endif %}
+</form>
+<div class="table-card">
+  <table class="data-table product-table">
+    <thead><tr><th>Barkod</th><th>Ürün adı</th><th>Durum</th><th></th></tr></thead>
+    <tbody>
+      {% for p in page_obj %}
+      <tr>
+        <td data-label="Barkod"><strong class="barcode-text">{{ p.barcode }}</strong></td>
+        <td data-label="Ürün adı"><strong>{{ p.name }}</strong></td>
+        <td data-label="Durum"><span class="status {% if p.is_active %}status-active{% else %}status-cancelled{% endif %}">{% if p.is_active %}Aktif{% else %}Pasif{% endif %}</span></td>
+        <td>{% if access.can_manage_products %}<a class="icon-link" href="{% url 'product_edit' p.pk %}">Düzenle</a>{% endif %}</td>
+      </tr>
+      {% empty %}<tr><td colspan="4">Ürün bulunamadı.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

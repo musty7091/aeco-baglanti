@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block page_title %}Araçlar{% endblock %}
+{% block page_subtitle %}Sevkiyatlarda kullanılacak araçları yönetin{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid transport-settings-grid">
+  <div class="form-panel">
+    <div class="section-head">
+      <div>
+        <h2>Yeni Araç</h2>
+        <p>Plaka, sevkiyat ekranında açılır listeden seçilir.</p>
+      </div>
+    </div>
+
+    <form method="post" class="modern-form">
+      {% csrf_token %}
+
+      {% for field in vehicle_form %}
+      <div class="field">
+        <label>{{ field.label }}</label>
+        {{ field }}
+
+        {% for error in field.errors %}
+        <em>{{ error }}</em>
+        {% endfor %}
+      </div>
+      {% endfor %}
+
+      <button class="btn btn-primary btn-block">
+        Aracı Kaydet
+      </button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Kayıtlı Araçlar</h2>
+        <p>Pasif araçlar yeni sevkiyatlarda görünmez.</p>
+      </div>
+    </div>
+
+    {% for vehicle in vehicles %}
+    <div class="list-row transport-row">
+      <div>
+        <strong>{{ vehicle.plate }}</strong>
+        <span>{{ vehicle.description|default:'Açıklama yok' }}</span>
+      </div>
+
+      <div class="transport-actions">
+        <a
+          class="icon-link"
+          href="{% url 'vehicle_edit' vehicle.pk %}"
+        >
+          Düzenle
+        </a>
+
+        <form
+          method="post"
+          action="{% url 'transport_toggle' 'vehicle' vehicle.pk %}"
+        >
+          {% csrf_token %}
+          <button
+            class="status {% if vehicle.is_active %}status-active{% else %}status-cancelled{% endif %}"
+          >
+            {% if vehicle.is_active %}Aktif{% else %}Pasif{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-mini">
+      Henüz araç kaydı yok.
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

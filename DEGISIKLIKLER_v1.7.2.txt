@@ -1,0 +1,9 @@
+AECO Bağlantılı Satış v1.7.2
+
+Bu sürümde gece modu görünümü iyileştirildi.
+
+Yapılan düzeltmeler:
+- İşlem Geçmişi ekranında gece modunda başlık, satır metni ve kullanıcı bilgisinin kontrastı artırıldı.
+- Gece modunda beyaz görünen detay kutuları koyu temaya uyarlandı.
+- Arama kutusu, placeholder, tema düğmesi ve sayfalama bağlantıları gece modunda daha okunur hale getirildi.
+- CSS ve statik dosya sürüm numarası güncellendi.

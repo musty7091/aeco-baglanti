@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ shipment.number }}{% endblock %}
+{% block page_subtitle %}{{ shipment.customer.name }} • Sipariş {{ shipment.order.number }}{% endblock %}
+
+{% block top_actions %}
+<a class="btn btn-light" href="{% url 'shipment_pdf' shipment.pk %}">
+  PDF
+</a>
+
+{% if can_edit_shipment %}
+<a class="btn btn-light" href="{% url 'shipment_edit' shipment.pk %}">
+  Düzenle
+</a>
+{% endif %}
+
+{% if can_deliver_shipment %}
+<a class="btn btn-primary" href="{% url 'shipment_deliver' shipment.pk %}">
+  Teslimatı Tamamla
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="detail-hero">
+  <div>
+    <span class="status status-{{ shipment.status|lower }}">
+      {{ shipment.get_status_display }}
+    </span>
+
+    <h2>{{ shipment.customer.name }}</h2>
+
+    <p>
+      {{ shipment.shipment_date|date:'d.m.Y' }}
+      •
+      {{ shipment.vehicle_plate|default:'Plaka seçilmedi' }}
+    </p>
+  </div>
+
+  <div class="hero-stats">
+    <div>
+      <small>
+        {% if shipment.status == 'DELIVERED' %}
+        Teslim Edilen
+        {% else %}
+        Sevk Miktarı
+        {% endif %}
+      </small>
+      <strong>{{ shipment.total_delivered|adet }}</strong>
+    </div>
+
+    <div>
+      <small>Sevkiyat Personeli</small>
+      <strong class="small-stat">
+        {% if shipment.assigned_dispatcher %}
+          {{ shipment.assigned_dispatcher.get_full_name|default:shipment.assigned_dispatcher.username }}
+        {% else %}
+          Atanmadı
+        {% endif %}
+      </strong>
+    </div>
+  </div>
+</div>
+
+{% if can_mark_preparing or can_mark_loaded or can_mark_on_route %}
+<div class="status-flow">
+  {% if can_mark_preparing %}
+  <form
+    method="post"
+    action="{% url 'shipment_status' shipment.pk 'PREPARING' %}"
+  >
+    {% csrf_token %}
+    <button>Hazırlamaya Başla</button>
+  </form>
+  {% else %}
+  <span class="{% if shipment.status == 'PREPARING' or shipment.status == 'LOADED' or shipment.status == 'ON_ROUTE' %}active{% endif %}">
+    Hazırlanıyor
+  </span>
+  {% endif %}
+
+  <i></i>
+
+  {% if can_mark_loaded %}
+  <form
+    method="post"
+    action="{% url 'shipment_status' shipment.pk 'LOADED' %}"
+  >
+    {% csrf_token %}
+    <button>Yüklendi</button>
+  </form>
+  {% else %}
+  <span class="{% if shipment.status == 'LOADED' or shipment.status == 'ON_ROUTE' %}active{% endif %}">
+    Yüklendi
+  </span>
+  {% endif %}
+
+  <i></i>
+
+  {% if can_mark_on_route %}
+  <form
+    method="post"
+    action="{% url 'shipment_status' shipment.pk 'ON_ROUTE' %}"
+  >
+    {% csrf_token %}
+    <button>Yola Çıkar</button>
+  </form>
+  {% else %}
+  <span class="{% if shipment.status == 'ON_ROUTE' %}active{% endif %}">
+    Yolda
+  </span>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="info-grid">
+  <div>
+    <span>Depo</span>
+    <strong>{{ shipment.warehouse.name }}</strong>
+  </div>
+
+  <div>
+    <span>Teslim Tarihi</span>
+    <strong>{{ shipment.delivery_date|date:'d.m.Y'|default:'-' }}</strong>
+  </div>
+
+  <div>
+    <span>Araç Plakası</span>
+    <strong>{{ shipment.vehicle_plate|default:'-' }}</strong>
+  </div>
+
+  <div>
+    <span>Sevkiyat Personeli</span>
+    <strong>
+      {% if shipment.assigned_dispatcher %}
+        {{ shipment.assigned_dispatcher.get_full_name|default:shipment.assigned_dispatcher.username }}
+      {% else %}
+        Atanmadı
+      {% endif %}
+    </strong>
+  </div>
+
+  <div>
+    <span>Hazırlayan Personel</span>
+    <strong>{{ shipment.prepared_by_name|default:'-' }}</strong>
+  </div>
+
+  <div>
+    <span>Teslim Alan</span>
+    <strong>{{ shipment.delivered_to|default:'-' }}</strong>
+  </div>
+</div>
+
+{% if shipment.delivery_notes %}
+<div class="note-box delivery-note-box">
+  <strong>Teslimat Açıklaması</strong>
+  <p>{{ shipment.delivery_notes }}</p>
+</div>
+{% endif %}
+
+<div class="table-card">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Barkod</th>
+        <th>Ürün</th>
+        <th>İstinaden Satış Faturası</th>
+        <th>Sevk Miktarı</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for i in items %}
+      <tr>
+        <td data-label="Barkod">
+          <strong class="barcode-text">
+            {{ i.connection_item.product.barcode }}
+          </strong>
+        </td>
+
+        <td data-label="Ürün">
+          <strong>{{ i.connection_item.product.name }}</strong>
+          <small>
+            Adet
+            {% if i.connection_item.is_free_item %}
+              · Bedelsiz
+            {% elif i.connection_item.discount_rate %}
+              · %{{ i.connection_item.discount_rate|oran }} iskonto
+            {% endif %}
+          </small>
+        </td>
+
+        <td data-label="İstinaden Satış Faturası">
+          <strong>{{ i.connection_item.connection.invoice_no }}</strong>
+          <small>
+            {{ i.connection_item.connection.invoice_date|date:'d.m.Y' }}
+          </small>
+        </td>
+
+        <td data-label="Sevk Miktarı">
+          <strong>{{ i.quantity_delivered|adet }}</strong> adet
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if shipment.delivery_proof or shipment.receiver_signature %}
+<div class="proof-grid">
+  {% if shipment.delivery_proof %}
+  <a href="{{ shipment.delivery_proof.url }}" target="_blank">
+    <span>Teslimat Fotoğrafı</span>
+    <img src="{{ shipment.delivery_proof.url }}">
+  </a>
+  {% endif %}
+
+  {% if shipment.receiver_signature %}
+  <a href="{{ shipment.receiver_signature.url }}" target="_blank">
+    <span>Teslim Alan İmzası</span>
+    <img src="{{ shipment.receiver_signature.url }}">
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if can_cancel_shipment %}
+<div class="danger-zone">
+  <div>
+    <strong>Sevkiyatı İptal Et</strong>
+    <p>
+      Teslim edilmiş sevkiyat iptal edilemez;
+      düzeltme hareketi gerekir.
+    </p>
+  </div>
+
+  <form
+    method="post"
+    action="{% url 'shipment_cancel' shipment.pk %}"
+    data-confirm="Sevkiyatı iptal etmek istediğinize emin misiniz?"
+  >
+    {% csrf_token %}
+    <button class="btn btn-danger">
+      İptal Et
+    </button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block page_title %}Sevk Geçmişi{% endblock %}
+{% block page_subtitle %}{{ customer.name }} • Fatura bazında tüm ürün hareketleri • Sayfa başına 20 kayıt{% endblock %}
+{% block top_actions %}<a class="btn btn-light" href="{% url 'customer_detail' customer.pk %}">Müşteriye Dön</a>{% endblock %}
+{% block content %}
+<div class="filter-card history-filter">
+  <form method="get" class="filter-row">
+    <label><span>Başlangıç</span><input type="date" name="date_from" value="{{ date_from }}" class="form-control"></label>
+    <label><span>Bitiş</span><input type="date" name="date_to" value="{{ date_to }}" class="form-control"></label>
+    <button class="btn btn-dark">Filtrele</button>
+    <a class="btn btn-light" href="{% url 'customer_history' customer.pk %}">Temizle</a>
+  </form>
+</div>
+<div class="table-card">
+  <table class="data-table">
+    <thead><tr><th>Sevk Tarihi</th><th>Sevk No</th><th>Barkod</th><th>Ürün</th><th>İstinaden Satış Faturası</th><th>Sevk Miktarı</th><th>Durum</th></tr></thead>
+    <tbody>
+      {% for line in page_obj %}
+      <tr>
+        <td data-label="Sevk Tarihi">{{ line.shipment.shipment_date|date:'d.m.Y' }}</td>
+        <td data-label="Sevk No"><a class="table-link" href="{% url 'shipment_detail' line.shipment.pk %}">{{ line.shipment.number }}</a></td>
+        <td data-label="Barkod"><strong class="barcode-text">{{ line.connection_item.product.barcode }}</strong></td>
+        <td data-label="Ürün"><strong>{{ line.connection_item.product.name }}</strong></td>
+        <td data-label="İstinaden Satış Faturası"><strong>{{ line.connection_item.connection.invoice_no }}</strong><small>{{ line.connection_item.connection.invoice_date|date:'d.m.Y' }}</small></td>
+        <td data-label="Sevk Miktarı"><strong>{{ line.quantity_delivered|adet }}</strong> adet</td>
+        <td data-label="Durum"><span class="status status-{{ line.shipment.status|lower }}">{{ line.shipment.get_status_display }}</span></td>
+      </tr>
+      {% empty %}<tr><td colspan="7"><div class="empty-mini">Seçilen dönemde sevk hareketi bulunamadı.</div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

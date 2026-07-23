@@ -1,0 +1,16 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="pagination">
+  <span>Sayfa {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} • {{ page_obj.paginator.count }} kayıt</span>
+  <div>
+    {% if page_obj.has_previous %}
+      <a title="İlk sayfa" href="?page=1&q={{ q|urlencode }}&status={{ status|urlencode }}&date_from={{ date_from|urlencode }}&date_to={{ date_to|urlencode }}">«</a>
+      <a title="Önceki sayfa" href="?page={{ page_obj.previous_page_number }}&q={{ q|urlencode }}&status={{ status|urlencode }}&date_from={{ date_from|urlencode }}&date_to={{ date_to|urlencode }}">‹</a>
+    {% endif %}
+    <strong>{{ page_obj.number }}</strong>
+    {% if page_obj.has_next %}
+      <a title="Sonraki sayfa" href="?page={{ page_obj.next_page_number }}&q={{ q|urlencode }}&status={{ status|urlencode }}&date_from={{ date_from|urlencode }}&date_to={{ date_to|urlencode }}">›</a>
+      <a title="Son sayfa" href="?page={{ page_obj.paginator.num_pages }}&q={{ q|urlencode }}&status={{ status|urlencode }}&date_from={{ date_from|urlencode }}&date_to={{ date_to|urlencode }}">»</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

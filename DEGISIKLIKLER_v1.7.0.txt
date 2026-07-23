@@ -1,0 +1,12 @@
+AECO Bağlantılı Satış v1.7.0
+
+- Müşteri kodu MUS-00001 biçiminde otomatik ve kilitli sayaçla üretilir.
+- Müşteri fatura/teslimat adresi alanları kaldırıldı.
+- Bağlantılı satış son teslim tarihi kaldırıldı.
+- KDV dâhil fatura genel toplamı canlı ve sunucu taraflı hesaplanır.
+- Bağlantı listesi, detay ve PDF çıktısına genel toplam eklendi.
+- Profesyonel fatura eki paneli eklendi.
+- Ücretsiz yerel Windows WIA tarama servisi eklendi.
+- Çok sayfalı tarama tek PDF'e dönüştürülüp forma otomatik eklenir.
+- Türkçe kaynak metinleri UTF-8 olarak temizlendi.
+- Güncel tek 0001_initial.py migrasyonu oluşturuldu.

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block page_title %}{% if edit_mode %}Sevkiyatı Düzenle{% else %}Yeni Sevkiyat{% endif %}{% endblock %}
+{% block page_subtitle %}{{ order.number }} • {{ order.customer.name }}{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="modern-form">
+  {% csrf_token %}
+
+  <div class="form-panel">
+    <div class="section-head">
+      <div><h2>Sevk Planı</h2><p>Depo, tarih, araç ve sevkiyat görevlisi bilgileri</p></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>{{ form.warehouse.label }}</label>{{ form.warehouse }}{{ form.warehouse.errors }}</div>
+      <div class="field"><label>{{ form.shipment_date.label }}</label>{{ form.shipment_date }}{{ form.shipment_date.errors }}</div>
+      <div class="field"><label>{{ form.vehicle_plate.label }}</label>{{ form.vehicle_plate }}{{ form.vehicle_plate.errors }}</div>
+      <div class="field"><label>{{ form.assigned_dispatcher.label }}</label>{{ form.assigned_dispatcher }}{{ form.assigned_dispatcher.errors }}</div>
+      <div class="field"><label>{{ form.prepared_by_name.label }}</label>{{ form.prepared_by_name }}{{ form.prepared_by_name.errors }}</div>
+      <div class="field span-2"><label>{{ form.delivery_address.label }}</label>{{ form.delivery_address }}{{ form.delivery_address.errors }}</div>
+    </div>
+  </div>
+
+  <div class="camera-later-note"><strong>📷 Teslimat fotoğrafları teslim sırasında yüklenir.</strong><span>Sevkiyat personeli telefondan imza ve teslimat kanıt fotoğrafını çekerek teslimatı tamamlar.</span></div>
+
+  <div class="section-head movement-title">
+    <div><h2>Sevk Kalemleri</h2><p>Tek miktar girilir; hazırlama, yükleme ve teslim durumları sevkiyat aşamasından takip edilir</p></div>
+  </div>
+
+  <div class="shipment-line-table">
+    <div class="shipment-line-header">
+      <span>Ürün / Barkod</span>
+      <span>İstinaden Satış Faturası</span>
+      <span>Siparişte Kalan</span>
+      <span>Bu Sevkte Verilecek</span>
+    </div>
+    {% for row in shipment_rows %}
+      {% with i=row.order_item %}
+      <div class="shipment-line-row">
+        <div class="shipment-product-cell">
+          <strong>{{ i.connection_item.product.name }}</strong>
+          <span class="barcode-text">{{ i.connection_item.product.barcode }}{% if i.connection_item.is_free_item %} · Bedelsiz{% elif i.connection_item.discount_rate %} · %{{ i.connection_item.discount_rate|oran }} iskonto{% endif %}</span>
+        </div>
+        <div class="shipment-invoice-cell">
+          <strong>{{ i.connection_item.connection.invoice_no }}</strong>
+          <span>{{ i.connection_item.connection.invoice_date|date:'d.m.Y' }}</span>
+        </div>
+        <div class="shipment-remaining-cell">
+          <small>Siparişte kalan</small>
+          <strong>{{ row.max_quantity|adet }} adet</strong>
+        </div>
+        <label class="shipment-quantity-cell">
+          <span>Bu sevkte verilecek</span>
+          <input
+            class="form-control qty-input"
+            type="number"
+            min="0"
+            step="1"
+            inputmode="numeric"
+            name="quantity_{{ i.pk }}"
+            value="{{ row.quantity }}"
+            data-max="{{ row.max_quantity }}"
+            aria-label="{{ i.connection_item.product.name }} bu sevkte verilecek miktar"
+          >
+        </label>
+      </div>
+      {% endwith %}
+    {% empty %}
+      <div class="empty-state"><strong>Sevk edilecek ürün kalmadı</strong><p>Siparişin tüm kalemleri teslim edilmiş veya başka açık sevkiyatlara ayrılmış.</p></div>
+    {% endfor %}
+  </div>
+
+  <div class="sticky-submit">
+    <button type="button" class="btn btn-light" onclick="history.back()">Vazgeç</button>
+    <button class="btn btn-primary">{% if edit_mode %}Değişiklikleri Kaydet{% else %}Sevk Taslağını Oluştur{% endif %}</button>
+  </div>
+</form>
+{% endblock %}

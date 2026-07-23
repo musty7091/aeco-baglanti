@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block page_title %}Teslimatı Tamamla{% endblock %}
+{% block page_subtitle %}{{ shipment.number }} • {{ shipment.customer.name }}{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="modern-form delivery-completion-form" data-delivery-form>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+  <div class="delivery-warning">
+    <strong>Bu işlem fatura bakiyelerini düşürür.</strong>
+    <span>İmza ve teslimat kanıt fotoğrafları yüklenmeden teslimat kesinleştirilemez.</span>
+  </div>
+
+  <div class="form-panel">
+    <div class="section-head"><div><h2>Teslim Alan Bilgileri</h2><p>Müşteri tarafındaki teslim alan kişiyi kaydedin</p></div></div>
+    <div class="form-grid">
+      <div class="field"><label>{{ form.delivery_date.label }}<b>*</b></label>{{ form.delivery_date }}{{ form.delivery_date.errors }}</div>
+      <div class="field"><label>{{ form.delivered_to.label }}<b>*</b></label>{{ form.delivered_to }}{{ form.delivered_to.errors }}</div>
+    </div>
+  </div>
+
+  <div class="camera-grid">
+    <label class="camera-card" for="{{ form.receiver_signature.id_for_label }}">
+      <span class="camera-icon">✍️</span>
+      <strong>İmza Fotoğrafını Çek</strong>
+      <small>İmzalanmış formun veya teslim alan imzasının net fotoğrafını çekin.</small>
+      {{ form.receiver_signature }}
+      <span class="camera-action">Kamerayı Aç / Fotoğraf Seç</span>
+      <img class="camera-preview" data-camera-preview="signature" alt="İmza fotoğrafı önizlemesi" hidden>
+      {% for error in form.receiver_signature.errors %}<em>{{ error }}</em>{% endfor %}
+    </label>
+
+    <label class="camera-card" for="{{ form.delivery_proof.id_for_label }}">
+      <span class="camera-icon">📦</span>
+      <strong>Teslimat Kanıtını Çek</strong>
+      <small>Teslim edilen ürünleri ve mümkünse teslim noktasını gösteren fotoğraf çekin.</small>
+      {{ form.delivery_proof }}
+      <span class="camera-action">Kamerayı Aç / Fotoğraf Seç</span>
+      <img class="camera-preview" data-camera-preview="proof" alt="Teslimat fotoğrafı önizlemesi" hidden>
+      {% for error in form.delivery_proof.errors %}<em>{{ error }}</em>{% endfor %}
+    </label>
+  </div>
+
+  <details class="optional-note-panel" {% if form.delivery_notes.value %}open{% endif %}>
+    <summary>
+      <span>＋ Teslimatla ilgili açıklama ekle</span>
+      <small>İsteğe bağlı</small>
+    </summary>
+    <div class="optional-note-content">
+      <div class="field"><label>{{ form.delivery_notes.label }}</label>{{ form.delivery_notes }}{{ form.delivery_notes.errors }}</div>
+    </div>
+  </details>
+
+  <div class="table-card delivery-summary-table">
+    <table class="data-table">
+      <thead><tr><th>Barkod</th><th>Ürün</th><th>İstinaden satış faturası</th><th>Teslim edilecek</th></tr></thead>
+      <tbody>{% for i in items %}<tr>
+        <td data-label="Barkod"><strong class="barcode-text">{{ i.connection_item.product.barcode }}</strong></td>
+        <td data-label="Ürün"><strong>{{ i.connection_item.product.name }}</strong>{% if i.connection_item.is_free_item %}<small>Bedelsiz</small>{% elif i.connection_item.discount_rate %}<small>%{{ i.connection_item.discount_rate|oran }} iskonto</small>{% endif %}</td>
+        <td data-label="İstinaden satış faturası"><strong>{{ i.connection_item.connection.invoice_no }}</strong><small>{{ i.connection_item.connection.invoice_date|date:'d.m.Y' }}</small></td>
+        <td data-label="Teslim edilecek"><strong>{{ i.quantity_delivered|adet }}</strong> adet</td>
+      </tr>{% endfor %}</tbody>
+    </table>
+  </div>
+
+  <div class="sticky-submit delivery-submit">
+    <a class="btn btn-light" href="{% url 'shipment_detail' shipment.pk %}">Vazgeç</a>
+    <button class="btn btn-primary" data-delivery-submit>Teslimatı Kesinleştir</button>
+  </div>
+</form>
+{% endblock %}

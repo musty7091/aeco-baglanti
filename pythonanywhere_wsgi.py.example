@@ -1,0 +1,10 @@
+import os
+import sys
+
+project_home = '/home/YOUR_USERNAME/AECO_Baglantili_Satis'
+if project_home not in sys.path:
+    sys.path.insert(0, project_home)
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'aeco_project.settings')
+
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()

@@ -1,0 +1,33 @@
+AECO BAĞLANTILI SATIŞ v1.7.1 — DEMO TEST REHBERİ
+
+1. DEMO VERİYİ OLUŞTURMA
+- DEMO_VERI_OLUSTUR.bat dosyasını çalıştırın.
+- Kullanıcı: demo_admin
+- Şifre: Demo1234!
+
+2. MÜŞTERİ TESTİ
+- Yeni müşteri açın.
+- Müşteri kodu alanının formda bulunmadığını doğrulayın.
+- Kayıttan sonra MUS-xxxxx biçiminde kod üretildiğini doğrulayın.
+
+3. BAĞLANTILI SATIŞ TESTİ
+- Yeni bağlantılı satış açın.
+- Son teslim tarihi alanının bulunmadığını doğrulayın.
+- Birden fazla ürün satırı ekleyin.
+- Miktar, fiyat, iskonto veya KDV değişince KDV dâhil fatura genel toplamının anında değiştiğini doğrulayın.
+- %100 iskontolu satırın genel toplamı artırmadığını doğrulayın.
+
+4. FATURA EKİ TESTİ
+- Dosyadan Seç ile PDF/JPG/PNG yükleyin.
+- Bilgisayarda Tarayıcıdan Tara panelini açın.
+- Tarayıcı seçin, bir veya daha fazla sayfa tarayın ve tek PDF oluşturun.
+- Tarayıcı yoksa anlaşılır hata gösterildiğini doğrulayın.
+
+5. SEVKİYAT TESTİ
+- Onaylı sipariş üzerinden sevkiyat oluşturun.
+- Depo, sevk tarihi, araç plakası, sevkiyat personeli, hazırlayan personel ve teslimat adresi alanlarını kontrol edin.
+- Şoför veya kontrol eden personel alanının bulunmadığını doğrulayın.
+
+6. TÜRKÇE TESTİ
+Ekranlarda ve demo verilerinde şu metinlerin doğru olduğunu kontrol edin:
+başarıyla, ürün, bağlantı, şifre, Şahin, Şube, Jägermeister, Moët & Chandon.

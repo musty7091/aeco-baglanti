@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block page_title %}Kontrol Merkezi{% endblock %}
+{% block page_subtitle %}Rolünüze göre güncel bağlantı, sipariş ve sevkiyat görünümü{% endblock %}
+{% block top_actions %}{% if access.can_create_orders %}<a class="btn btn-primary" href="{% url 'order_create' %}">＋ Yeni Sipariş</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="metric-grid">
+  {% if access.can_view_connections %}<div class="metric-card accent"><span class="metric-icon">▣</span><div><small>Açık Bağlantı</small><strong>{{ active_connection_count }}</strong><em>satış dosyası</em></div></div>{% endif %}
+  {% if access.can_view_orders %}<div class="metric-card"><span class="metric-icon">✎</span><div><small>Açık Sipariş</small><strong>{{ open_order_count }}</strong><em>hazırlanacak talep</em></div></div>{% endif %}
+  {% if access.can_view_shipments %}<div class="metric-card"><span class="metric-icon">➜</span><div><small>Bekleyen Sevkiyat</small><strong>{{ pending_shipment_count }}</strong><em>teslimat sürecinde</em></div></div>{% endif %}
+  {% if access.can_view_customers or access.is_warehouse or access.is_dispatch %}<div class="metric-card"><span class="metric-icon">◉</span><div><small>İlgili Müşteri</small><strong>{{ customer_count }}</strong><em>erişilebilir hesap</em></div></div>{% endif %}
+</div>
+
+{% if access.can_view_connections %}
+<div class="balance-banner"><div><span>Toplam teslim yükümlülüğü</span><strong>{{ total_obligation|adet }}</strong></div><div><span>Siparişe açık bakiye</span><strong>{{ total_available|adet }}</strong></div><div class="balance-art">AECO</div></div>
+{% endif %}
+
+<div class="dashboard-grid">
+  {% if access.can_view_orders %}<div class="panel"><div class="panel-head"><div><h2>Son Siparişler</h2><p>Erişiminizdeki güncel talepler</p></div><a href="{% url 'order_list' %}">Tümünü gör →</a></div><div class="mobile-list">{% for o in recent_orders %}<a class="list-row" href="{% url 'order_detail' o.pk %}"><div><strong>{{ o.customer.name }}</strong><span>{{ o.number }} • {{ o.order_date|date:'d.m.Y' }}</span></div><span class="status status-{{ o.status|lower }}">{{ o.get_status_display }}</span></a>{% empty %}<div class="empty-mini">Henüz sipariş yok.</div>{% endfor %}</div></div>{% endif %}
+  {% if access.can_view_shipments %}<div class="panel"><div class="panel-head"><div><h2>Son Sevkiyatlar</h2><p>Yükleme ve teslimat hareketleri</p></div><a href="{% url 'shipment_list' %}">Tümünü gör →</a></div><div class="mobile-list">{% for s in recent_shipments %}<a class="list-row" href="{% url 'shipment_detail' s.pk %}"><div><strong>{{ s.customer.name }}</strong><span>{{ s.number }} • {{ s.shipment_date|date:'d.m.Y' }}</span></div><span class="status status-{{ s.status|lower }}">{{ s.get_status_display }}</span></a>{% empty %}<div class="empty-mini">Henüz sevkiyat yok.</div>{% endfor %}</div></div>{% endif %}
+</div>
+
+{% if access.can_view_connections %}
+<div class="dashboard-grid">
+  <div class="panel warning-panel"><div class="panel-head"><div><h2>90+ Gün Hareketsiz</h2><p>Takip edilmesi gereken eski bağlantılar</p></div></div>{% for c in stale_connections %}<a class="alert-row" href="{% url 'connection_detail' c.pk %}"><span>!</span><div><strong>{{ c.customer.name }}</strong><small>{{ c.invoice_no }} • {{ c.invoice_date|date:'d.m.Y' }}</small></div></a>{% empty %}<div class="empty-mini">Hareketsiz bağlantı bulunmuyor.</div>{% endfor %}</div>
+</div>
+{% endif %}
+{% endblock %}

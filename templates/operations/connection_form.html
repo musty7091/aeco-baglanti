@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Satış faturası ile depoda bekletilecek ürünleri eşleştirin{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="modern-form" data-connection-form>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+  <div class="form-errors">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="form-panel">
+    <div class="section-head">
+      <div>
+        <h2>Fatura ve Müşteri</h2>
+        <p>Bağlantının temel ticari bilgileri</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      {% for field in form %}
+        {% if field.name != 'invoice_attachment' %}
+        <div class="field {% if field.name == 'notes' %}span-2{% endif %}">
+          <label for="{{ field.id_for_label }}">
+            {{ field.label }}{% if field.field.required %}<b>*</b>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+          {% for error in field.errors %}<em>{{ error }}</em>{% endfor %}
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div
+    class="form-panel invoice-document-panel"
+    data-scanner-panel
+    data-scanner-url="{{ scanner.service_url }}"
+    data-scanner-token="{{ scanner.token }}"
+  >
+    <div class="section-head">
+      <div>
+        <h2>Satış Faturası Eki</h2>
+        <p>PDF veya görsel yükleyin; Windows bilgisayarda fiziksel tarayıcıyı da kullanabilirsiniz.</p>
+      </div>
+    </div>
+
+    <div class="document-upload-card">
+      <div class="document-upload-icon">▤</div>
+      <div class="document-upload-main">
+        <strong data-invoice-file-name>
+          {% if object.invoice_attachment %}{{ object.invoice_attachment.name }}{% else %}Henüz dosya seçilmedi{% endif %}
+        </strong>
+        <span data-invoice-file-type>
+          {% if object.invoice_attachment %}Mevcut fatura eki{% else %}PDF, JPG, JPEG veya PNG • En fazla 10 MB{% endif %}
+        </span>
+      </div>
+      <div class="document-upload-actions">
+        <label class="btn btn-light document-file-button" for="{{ form.invoice_attachment.id_for_label }}">
+          Dosyadan Seç
+        </label>
+        <button type="button" class="btn btn-primary" data-open-scanner>
+          Tarayıcıdan Tara
+        </button>
+      </div>
+      <div class="native-file-input">{{ form.invoice_attachment }}</div>
+    </div>
+    {% for error in form.invoice_attachment.errors %}<em class="document-error">{{ error }}</em>{% endfor %}
+    <div class="scanner-mobile-note" data-scanner-mobile-note hidden>
+      Fiziksel WIA tarama yalnızca tarayıcının bağlı olduğu Windows bilgisayarda kullanılabilir. Telefonda Dosyadan Seç ile dosya veya kamera kullanabilirsiniz.
+    </div>
+  </div>
+
+  <div class="form-panel">
+    <div class="section-head">
+      <div>
+        <h2>Bağlantılı Ürünler</h2>
+        <p>Aynı barkodu satış ve bedelsiz kalem olarak ayrı satırlarda girebilirsiniz. Bedelsiz kalemde iskonto oranını %100 yazın.</p>
+      </div>
+      <button type="button" class="btn btn-light" data-add-form>＋ Satır Ekle</button>
+    </div>
+
+    {{ formset.management_form }}
+    {% if formset.non_form_errors %}<div class="form-errors">{{ formset.non_form_errors }}</div>{% endif %}
+
+    <div class="formset" data-formset>
+      {% for f in formset %}
+      <div class="item-form" data-form-row>
+        {{ f.id }}
+        <div class="item-form-grid">
+          {% for field in f.visible_fields %}
+            {% if field.name != 'DELETE' %}
+            <div class="field">
+              <label>{{ field.label }}</label>
+              {{ field }}
+              {% for error in field.errors %}<em>{{ error }}</em>{% endfor %}
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <div class="delete-field">
+          {{ f.DELETE }}
+          <button type="button" data-remove-form>Satırı kaldır</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <template data-empty-form>
+      <div class="item-form" data-form-row>
+        <div class="item-form-grid">
+          {% for field in formset.empty_form.visible_fields %}
+            {% if field.name != 'DELETE' %}
+            <div class="field">
+              <label>{{ field.label }}</label>
+              {{ field }}
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <div class="delete-field">
+          {{ formset.empty_form.DELETE }}
+          <button type="button" data-remove-form>Satırı kaldır</button>
+        </div>
+      </div>
+    </template>
+
+    <div class="invoice-grand-total-card" aria-live="polite">
+      <div>
+        <span>Fatura Genel Toplamı</span>
+        <small>KDV Dahil</small>
+      </div>
+      <strong data-invoice-grand-total>0,00</strong>
+    </div>
+  </div>
+
+  <div class="sticky-submit">
+    <button type="button" class="btn btn-light" onclick="history.back()">Vazgeç</button>
+    <button class="btn btn-primary">Bağlantıyı Kaydet</button>
+  </div>
+</form>
+
+<div class="scanner-modal" data-scanner-modal hidden>
+  <div class="scanner-modal-backdrop" data-close-scanner></div>
+  <section class="scanner-dialog" role="dialog" aria-modal="true" aria-labelledby="scanner-title">
+    <div class="scanner-dialog-head">
+      <div>
+        <h2 id="scanner-title">Fiziksel Tarayıcıdan Tara</h2>
+        <p>Her sayfayı ayrı ayrı tarayın; tamamlandığında tek PDF olarak faturaya eklenecektir.</p>
+      </div>
+      <button type="button" class="icon-btn" data-close-scanner aria-label="Kapat">×</button>
+    </div>
+
+    <div class="scanner-status" data-scanner-status>Tarayıcı servisine bağlanılıyor…</div>
+
+    <div class="field scanner-device-field">
+      <label for="scanner-device-select">Tarayıcı</label>
+      <select id="scanner-device-select" class="form-control" data-scanner-device disabled>
+        <option value="">Tarayıcılar yükleniyor…</option>
+      </select>
+    </div>
+
+    <div class="scanner-progress-card">
+      <span>Taranan sayfa</span>
+      <strong data-scanner-page-count>0</strong>
+      <small>Yeni sayfa için evrakı değiştirip “Sayfa Tara” düğmesine basın.</small>
+    </div>
+
+    <div class="scanner-dialog-actions">
+      <button type="button" class="btn btn-light" data-close-scanner>Vazgeç</button>
+      <button type="button" class="btn btn-dark" data-scan-page disabled>Sayfa Tara</button>
+      <button type="button" class="btn btn-primary" data-finish-scan disabled>PDF Oluştur ve Ekle</button>
+    </div>
+  </section>
+</div>
+{% endblock %}

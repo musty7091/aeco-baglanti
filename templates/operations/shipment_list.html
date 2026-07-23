@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block page_title %}Sevkiyatlar{% endblock %}
+{% block page_subtitle %}Sipariş hazırlama, yükleme ve teslimat takibi{% endblock %}
+
+{% block content %}
+<form class="filter-bar">
+  <div class="search-box">
+    <span>⌕</span>
+    <input
+      name="q"
+      value="{{ q }}"
+      placeholder="Sevk no, sipariş, müşteri veya plaka ara"
+    >
+    <button>Ara</button>
+  </div>
+
+  <select name="status" onchange="this.form.submit()">
+    <option value="">Tüm durumlar</option>
+
+    {% for value, label in statuses %}
+    <option
+      value="{{ value }}"
+      {% if status == value %}selected{% endif %}
+    >
+      {{ label }}
+    </option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="card-list">
+  {% for shipment in page_obj %}
+  <a
+    class="order-card"
+    href="{% url 'shipment_detail' shipment.pk %}"
+  >
+    <div class="order-date">
+      <b>{{ shipment.shipment_date|date:'d' }}</b>
+      <span>{{ shipment.shipment_date|date:'M' }}</span>
+    </div>
+
+    <div class="customer-main">
+      <strong>{{ shipment.customer.name }}</strong>
+      <span>
+        {{ shipment.number }} • {{ shipment.order.number }}
+      </span>
+
+      <small>
+        {{ shipment.vehicle_plate|default:'Plaka belirtilmedi' }}
+        •
+        {% if shipment.assigned_dispatcher %}
+          {{ shipment.assigned_dispatcher.get_full_name|default:shipment.assigned_dispatcher.username }}
+        {% else %}
+          Sevkiyat personeli atanmadı
+        {% endif %}
+      </small>
+    </div>
+
+    <span class="status status-{{ shipment.status|lower }}">
+      {{ shipment.get_status_display }}
+    </span>
+
+    <div class="card-chevron">›</div>
+  </a>
+  {% empty %}
+  <div class="empty-state">
+    <strong>Sevkiyat bulunamadı</strong>
+    <p>Onaylanmış sipariş üzerinden sevkiyat oluşturulur.</p>
+  </div>
+  {% endfor %}
+</div>
+
+{% include 'includes/pagination.html' %}
+{% endblock %}

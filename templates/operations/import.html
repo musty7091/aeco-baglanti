@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block page_title %}Excel'den {% if kind == 'products' %}Ürün{% else %}Müşteri{% endif %} Aktar{% endblock %}
+{% block page_subtitle %}{% if kind == 'products' %}Ürünler barkoda göre eklenir veya güncellenir{% else %}Yeni müşteri kodları otomatik üretilir; mevcut kayıtlar kodla güncellenebilir{% endif %}{% endblock %}
+{% block content %}
+<div class="import-card">
+  <div class="import-icon">XLSX</div>
+  <h2>Aktarım dosyasını seçin</h2>
+  <p>Önce doğru sütun yapısındaki şablonu indirmeniz önerilir.</p>
+  <a class="btn btn-light" href="{% url 'download_template' kind %}">Boş Şablonu İndir</a>
+  <form method="post" enctype="multipart/form-data" class="upload-box">{% csrf_token %}{{ form.file }}{% for e in form.file.errors %}<em>{{ e }}</em>{% endfor %}<button class="btn btn-primary">Dosyayı Kontrol Et ve Aktar</button></form>
+  <div class="note-box"><strong>Güvenli aktarım</strong><p>{% if kind == 'products' %}Aynı barkod tekrar gelirse ürün çoğaltılmaz; mevcut ürün kartı güncellenir.{% else %}Yeni satırlarda müşteri kodunu boş bırakın; sistem sıradaki kodu üretir. Kod mevcutsa ilgili müşteri güncellenir.{% endif %} Hatalı satırlar ayrıca bildirilir.</p></div>
+</div>
+{% endblock %}

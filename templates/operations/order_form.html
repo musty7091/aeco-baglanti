@@ -1,0 +1,397 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Yeni Sipariş{% endblock %}
+{% block page_subtitle %}Müşterinin kullanılabilir bağlantılı mallarından sipariş alın{% endblock %}
+
+{% block content %}
+
+<style>
+  .order-balance-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid var(--border-color, #dfe3e8);
+    border-radius: 16px;
+    background: var(--panel-bg, #ffffff);
+  }
+
+  .order-balance-table {
+    width: 100%;
+    min-width: 1050px;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .order-balance-table th {
+    padding: 13px 15px;
+    background: var(--table-head-bg, #f5f6f8);
+    color: var(--muted-color, #586174);
+    border-bottom: 1px solid var(--border-color, #dfe3e8);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.2;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.035em;
+    white-space: nowrap;
+  }
+
+  .order-balance-table td {
+    padding: 14px 15px;
+    border-bottom: 1px solid var(--border-color, #e4e7eb);
+    vertical-align: middle;
+  }
+
+  .order-balance-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .order-balance-table tbody tr:hover {
+    background: rgba(229, 30, 45, 0.035);
+  }
+
+  .order-product-name {
+    display: block;
+    color: var(--text-color, #111827);
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  .order-barcode {
+    color: var(--muted-color, #667085);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .order-invoice {
+    display: block;
+    color: var(--text-color, #111827);
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .order-invoice-date {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted-color, #667085);
+    font-size: 11px;
+  }
+
+  .order-line-type {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 27px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #eef2f6;
+    color: #344054;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .order-line-type.free {
+    background: #e8f7ef;
+    color: #067647;
+  }
+
+  .order-line-type.discount {
+    background: #fff4e5;
+    color: #b54708;
+  }
+
+  .order-available {
+    color: #067647;
+    font-size: 15px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .order-quantity-cell {
+    width: 165px;
+  }
+
+  .order-quantity-input {
+    width: 100%;
+    min-width: 115px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .order-table-empty {
+    padding: 32px 20px !important;
+    text-align: center;
+  }
+
+  .order-table-empty strong {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-color, #111827);
+  }
+
+  .order-table-empty p {
+    margin: 0;
+    color: var(--muted-color, #667085);
+  }
+
+  .order-mobile-hint {
+    display: none;
+    margin: 8px 2px 0;
+    color: var(--muted-color, #667085);
+    font-size: 11px;
+  }
+
+  @media (max-width: 900px) {
+    .order-mobile-hint {
+      display: block;
+    }
+
+    .order-balance-wrapper {
+      border-radius: 13px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .order-balance-table th,
+    .order-balance-table td {
+      padding: 12px;
+    }
+  }
+</style>
+
+<div class="stepper">
+  <span class="done">1</span>
+  <i></i>
+  <span class="{% if customer %}done{% endif %}">2</span>
+  <i></i>
+  <span>3</span>
+
+  <small>Müşteri</small>
+  <small>Ürünler</small>
+  <small>Onay</small>
+</div>
+
+<div class="form-panel">
+  <form method="get" class="customer-picker">
+    <label>Müşteri seçin</label>
+
+    <select name="customer" class="form-control" required>
+      <option value="">Müşteri seçiniz</option>
+
+      {% for c in customers %}
+        <option
+          value="{{ c.pk }}"
+          {% if customer and customer.pk == c.pk %}selected{% endif %}
+        >
+          {{ c.code }} - {{ c.name }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-dark">
+      Bağlantılı Malları Getir
+    </button>
+  </form>
+</div>
+
+{% if customer %}
+<form method="post" class="modern-form">
+  {% csrf_token %}
+
+  <input type="hidden" name="customer" value="{{ customer.pk }}">
+
+  <div class="selected-customer">
+    <div class="customer-avatar">
+      {{ customer.name|slice:':2'|upper }}
+    </div>
+
+    <div>
+      <strong>{{ customer.name }}</strong>
+      <span>
+        {{ customer.code }}
+        {% if customer.contact_name %}
+          • {{ customer.contact_name }}
+        {% endif %}
+      </span>
+    </div>
+
+    <a href="{% url 'customer_detail' customer.pk %}">
+      Müşteri kartı
+    </a>
+  </div>
+
+  <div class="form-panel">
+    <div class="form-grid">
+      {% for field in form %}
+        <div class="field {% if field.name == 'delivery_address' or field.name == 'notes' %}span-2{% endif %}">
+          <label>{{ field.label }}</label>
+
+          {{ field }}
+
+          {% for e in field.errors %}
+            <em>{{ e }}</em>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div>
+      <h2>Sipariş Miktarları</h2>
+      <p>
+        Aynı ürün farklı satış faturalarında veya farklı kalem türlerinde
+        ayrı satır olarak gösterilir.
+      </p>
+    </div>
+  </div>
+
+  {% if available_items %}
+    <div class="filter-card barcode-order-filter">
+      <label for="balance-product-filter">
+        Barkod / ürün ara
+      </label>
+
+      <input
+        id="balance-product-filter"
+        class="form-control barcode-lookup"
+        type="search"
+        autocomplete="off"
+        data-balance-filter
+        placeholder="Barkodu okutun veya ürün adını yazın"
+      >
+    </div>
+
+    <div class="order-balance-wrapper">
+      <table class="order-balance-table">
+        <colgroup>
+          <col style="width: 27%;">
+          <col style="width: 17%;">
+          <col style="width: 20%;">
+          <col style="width: 14%;">
+          <col style="width: 11%;">
+          <col style="width: 11%;">
+        </colgroup>
+
+        <thead>
+          <tr>
+            <th>Ürün</th>
+            <th>Barkod</th>
+            <th>Satış faturası</th>
+            <th>Kalem türü</th>
+            <th>Kullanılabilir</th>
+            <th>Sipariş adedi</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for i in available_items %}
+            <tr
+              data-balance-row
+              data-search="{{ i.product.barcode }} {{ i.product.name }} {{ i.product.brand }} {{ i.connection.invoice_no }}"
+            >
+              <td>
+                <span class="order-product-name">
+                  {{ i.product.name }}
+                </span>
+              </td>
+
+              <td>
+                <span class="order-barcode">
+                  {{ i.product.barcode }}
+                </span>
+              </td>
+
+              <td>
+                <span class="order-invoice">
+                  {{ i.connection.invoice_no }}
+                </span>
+
+                <span class="order-invoice-date">
+                  {{ i.connection.invoice_date|date:'d.m.Y' }}
+                </span>
+              </td>
+
+              <td>
+                {% if i.is_free_item %}
+                  <span class="order-line-type free">
+                    Bedelsiz
+                  </span>
+                {% elif i.discount_rate %}
+                  <span class="order-line-type discount">
+                    %{{ i.discount_rate|oran }} İskontolu
+                  </span>
+                {% else %}
+                  <span class="order-line-type">
+                    Satış
+                  </span>
+                {% endif %}
+              </td>
+
+              <td>
+                <span class="order-available">
+                  {{ i.available_quantity|adet }} Adet
+                </span>
+              </td>
+
+              <td class="order-quantity-cell">
+                <input
+                  class="form-control qty-input order-quantity-input"
+                  type="number"
+                  min="0"
+                  max="{{ i.available_quantity }}"
+                  step="1"
+                  name="qty_{{ i.pk }}"
+                  inputmode="numeric"
+                  placeholder="0"
+                  data-max="{{ i.available_quantity }}"
+                  aria-label="{{ i.product.name }} sipariş adedi"
+                >
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="order-table-empty">
+                <strong>Siparişe açık bakiye yok</strong>
+                <p>
+                  Müşterinin tüm bakiyesi teslim edilmiş veya mevcut bakiyeler
+                  başka siparişlere ayrılmış.
+                </p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="order-mobile-hint">
+      Tablonun diğer sütunlarını görmek için sağa veya sola kaydırın.
+    </p>
+
+    <div class="sticky-submit">
+      <span data-order-total>
+        Toplam talep: <b>0</b>
+      </span>
+
+      <button type="submit" class="btn btn-primary">
+        Siparişi Oluştur
+      </button>
+    </div>
+
+  {% else %}
+    <div class="empty-state">
+      <strong>Siparişe açık bakiye yok</strong>
+      <p>
+        Müşterinin tüm bakiyesi teslim edilmiş veya mevcut bakiyeler
+        başka siparişlere ayrılmış.
+      </p>
+    </div>
+  {% endif %}
+</form>
+{% endif %}
+
+{% endblock %}

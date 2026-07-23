@@ -1,0 +1,52 @@
+# Python sanal ortamı
+.venv/
+venv/
+env/
+
+# Python geçici dosyaları
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Gizli yapılandırma ve şifreler
+.env
+.env.local
+*.key
+*.pem
+
+# Yerel veritabanı
+db.sqlite3
+db.sqlite3-journal
+
+# Kullanıcı tarafından yüklenen belgeler
+media/
+
+# Otomatik oluşturulan statik dosyalar
+staticfiles/
+
+# Yedekler
+backups/
+*.bak
+*.backup
+
+# Log dosyaları
+*.log
+logs/
+
+# Editör ve Windows dosyaları
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Geçici dosyalar
+*.tmp
+*.temp
+~$*
+# Yerel çalışma zamanı ve tarama geçici dosyaları
+runtime/
+
+# Yerel kurulum işaretçisi
+.aeco_v170_clean_schema

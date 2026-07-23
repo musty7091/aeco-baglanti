@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block page_title %}Bağlantılı Satışlar{% endblock %}
+{% block page_subtitle %}Satış faturaları ve müşteriye ait bağlantılı ürün bakiyeleri{% endblock %}
+{% block top_actions %}
+  {% if access.can_manage_connections %}<a class="btn btn-primary" href="{% url 'connection_create' %}">＋ Yeni Bağlantı</a>{% endif %}
+{% endblock %}
+{% block content %}
+<form class="filter-bar">
+  <div class="search-box"><span>⌕</span><input name="q" value="{{ q }}" placeholder="Müşteri, bağlantı veya fatura ara"><button>Ara</button></div>
+  <select name="status" onchange="this.form.submit()"><option value="">Tüm durumlar</option>{% for value,label in statuses %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  {% if access.can_export_balances %}<a class="btn btn-light" href="{% url 'data_export' 'balances' %}">Bakiye Excel</a>{% endif %}
+</form>
+<div class="table-card"><table class="data-table"><thead><tr><th>Bağlantı</th><th>Müşteri</th><th>Satış Faturası</th><th>KDV Dahil Toplam</th><th>Durum</th><th></th></tr></thead><tbody>
+{% for x in page_obj %}<tr>
+  <td data-label="Bağlantı"><strong>{{ x.number }}</strong></td>
+  <td data-label="Müşteri"><strong>{{ x.customer.name }}</strong><small>{{ x.customer.code }}</small></td>
+  <td data-label="Satış Faturası"><strong>{{ x.invoice_no }}</strong><small>{{ x.invoice_date|date:'d.m.Y' }}</small></td>
+  <td data-label="KDV Dahil Toplam" class="connection-total-cell"><strong>{{ x.total_amount|para }} {{ company.default_currency }}</strong></td>
+  <td data-label="Durum"><span class="status status-{{ x.status|lower }}">{{ x.get_status_display }}</span></td>
+  <td><a class="icon-link" href="{% url 'connection_detail' x.pk %}">İncele</a></td>
+</tr>{% empty %}<tr><td colspan="6">Bağlantılı satış bulunamadı.</td></tr>{% endfor %}
+</tbody></table></div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

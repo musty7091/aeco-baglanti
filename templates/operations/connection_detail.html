@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ connection.number }}{% endblock %}
+{% block page_subtitle %}{{ connection.customer.name }} • Fatura {{ connection.invoice_no }}{% endblock %}
+{% block top_actions %}
+<a class="btn btn-light" href="{% url 'connection_pdf' connection.pk %}">PDF</a>
+{% if access.can_manage_connections %}
+  {% if not connection.is_locked %}<a class="btn btn-light" href="{% url 'connection_edit' connection.pk %}">Düzenle</a>{% endif %}
+  {% if connection.status == 'PENDING' or connection.status == 'DRAFT' %}<form method="post" action="{% url 'connection_approve' connection.pk %}">{% csrf_token %}<button class="btn btn-primary">Onayla ve Teslimata Aç</button></form>{% endif %}
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="detail-hero">
+  <div><span class="status status-{{ connection.status|lower }}">{{ connection.get_status_display }}</span><h2>{{ connection.customer.name }}</h2><p>Satış faturası <b>{{ connection.invoice_no }}</b> • {{ connection.invoice_date|date:'d.m.Y' }}</p></div>
+  <div class="hero-stats"><div><small>Toplam Hak</small><strong>{{ connection.total_quantity|adet }}</strong></div><div><small>Teslim</small><strong>{{ connection.delivered_quantity|adet }}</strong></div><div><small>Kalan</small><strong>{{ connection.remaining_quantity|adet }}</strong></div></div>
+</div>
+<div class="info-grid">
+  <div><span>Fatura Tarihi</span><strong>{{ connection.invoice_date|date:'d.m.Y' }}</strong></div>
+  <div><span>Oluşturan</span><strong>{{ connection.created_by.get_full_name|default:connection.created_by.username }}</strong></div>
+  <div><span>Onaylayan</span><strong>{{ connection.approved_by.get_full_name|default:'-' }}</strong></div>
+</div>
+
+<div class="connection-total-summary">
+  <div><span>Brüt Tutar</span><strong>{{ connection.gross_amount|para }} {{ company.default_currency }}</strong></div>
+  <div><span>İskonto</span><strong>{{ connection.discount_amount|para }} {{ company.default_currency }}</strong></div>
+  <div><span>Net Tutar</span><strong>{{ connection.net_amount|para }} {{ company.default_currency }}</strong></div>
+  <div><span>KDV</span><strong>{{ connection.vat_amount|para }} {{ company.default_currency }}</strong></div>
+  <div class="grand-total"><span>Fatura Genel Toplamı — KDV Dahil</span><strong>{{ connection.total_amount|para }} {{ company.default_currency }}</strong></div>
+</div>
+
+<div class="section-head"><div><h2>Ürün ve Fatura Bakiyeleri</h2><p>Fiyatlar satış faturası kalemleriyle birlikte kayıt altında tutulur</p></div></div>
+<div class="table-card"><table class="data-table"><thead><tr><th>Barkod</th><th>Ürün</th><th>Fatura Miktarı</th><th>Birim Fiyat</th><th>İskonto</th><th>KDV</th><th>Toplam Tutar</th><th>Teslim</th><th>Sipariş</th><th>Kullanılabilir</th><th></th></tr></thead><tbody>
+{% for i in items %}<tr>
+<td data-label="Barkod"><strong class="barcode-text">{{ i.product.barcode }}</strong></td>
+<td data-label="Ürün"><strong>{{ i.product.name }}</strong><small>Adet{% if i.is_free_item %} · Bedelsiz{% endif %}</small></td>
+<td data-label="Fatura Miktarı">{{ i.quantity|adet }}</td>
+<td data-label="Birim Fiyat">{{ i.unit_price|para }} {{ company.default_currency }}</td>
+<td data-label="İskonto">%{{ i.discount_rate|oran }}</td>
+<td data-label="KDV">%{{ i.vat_rate|oran }}</td>
+<td data-label="Toplam Tutar"><strong>{{ i.total_amount|para }} {{ company.default_currency }}</strong></td>
+<td data-label="Teslim">{{ i.delivered_quantity|adet }}</td>
+<td data-label="Sipariş">{{ i.reserved_quantity|adet }}</td>
+<td data-label="Kullanılabilir"><strong class="text-success">{{ i.available_quantity|adet }}</strong></td>
+<td>{% if connection.is_locked %}{% if access.can_manage_connections %}<a class="icon-link" href="{% url 'adjustment_create' i.pk %}">Düzeltme</a>{% endif %}{% endif %}</td>
+</tr>{% endfor %}
+</tbody></table></div>
+
+<div class="section-head movement-title"><div><h2>Bu Faturaya İstinaden Sevkler</h2><p>Bu satış faturasından planlanan ve tamamlanan sevk miktarları</p></div></div>
+<div class="table-card compact-table-card"><table class="data-table"><thead><tr><th>Tarih / Sevk</th><th>Barkod</th><th>Ürün</th><th>Sevk Miktarı</th><th>Durum</th></tr></thead><tbody>
+{% for line in shipment_lines %}<tr><td data-label="Tarih / Sevk"><a class="table-link" href="{% url 'shipment_detail' line.shipment.pk %}">{{ line.shipment.number }}</a><small>{{ line.shipment.shipment_date|date:'d.m.Y' }}</small></td><td data-label="Barkod"><strong class="barcode-text">{{ line.connection_item.product.barcode }}</strong></td><td data-label="Ürün"><strong>{{ line.connection_item.product.name }}</strong></td><td data-label="Sevk Miktarı"><strong>{{ line.quantity_delivered|adet }}</strong> Adet</td><td data-label="Durum"><span class="status status-{{ line.shipment.status|lower }}">{{ line.shipment.get_status_display }}</span></td></tr>
+{% empty %}<tr><td colspan="5"><div class="empty-mini">Bu faturaya bağlı sevkiyat hareketi yok.</div></td></tr>{% endfor %}
+</tbody></table></div>
+
+{% if adjustments %}
+<div class="section-head movement-title"><div><h2>Bakiye Düzeltmeleri</h2><p>Silme yerine denetlenebilir artı/eksi hareketler</p></div></div>
+<div class="table-card compact-table-card"><table class="data-table"><thead><tr><th>Tarih</th><th>Ürün</th><th>Tür</th><th>Miktar</th><th>Referans</th><th>Açıklama</th><th>Kullanıcı</th></tr></thead><tbody>
+{% for a in adjustments %}<tr><td data-label="Tarih">{{ a.created_at|date:'d.m.Y H:i' }}</td><td data-label="Ürün"><strong>{{ a.connection_item.product.name }}</strong></td><td data-label="Tür">{{ a.get_kind_display }}</td><td data-label="Miktar"><strong>{{ a.signed_quantity|adet }}</strong></td><td data-label="Referans">{{ a.reference_no|default:'-' }}</td><td data-label="Açıklama">{{ a.reason }}</td><td data-label="Kullanıcı">{{ a.created_by.get_full_name|default:a.created_by.username }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}
+
+{% if connection.invoice_attachment %}<a class="document-link" href="{{ connection.invoice_attachment.url }}" target="_blank">Ekli satış faturasını aç →</a>{% endif %}
+{% if connection.notes %}<div class="note-box"><strong>Açıklama</strong><p>{{ connection.notes }}</p></div>{% endif %}
+{% if access.can_manage_connections %}<div class="danger-zone"><div><strong>Bağlantıyı İptal Et</strong><p>Yalnızca teslimatı ve aktif sipariş rezervi olmayan bağlantılar iptal edilebilir.</p></div><form method="post" action="{% url 'connection_cancel' connection.pk %}" data-confirm="Bağlantıyı iptal etmek istediğinize emin misiniz?">{% csrf_token %}<button class="btn btn-danger">İptal Et</button></form></div>{% endif %}
+{% endblock %}

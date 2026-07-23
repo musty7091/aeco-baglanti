@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ customer.name }}{% endblock %}
+{% block page_subtitle %}{{ customer.code }} • {{ customer.contact_name|default:'Yetkili bilgisi yok' }}{% endblock %}
+{% block top_actions %}
+<a class="btn btn-light" href="{% url 'customer_history' customer.pk %}">Sevk Geçmişi</a>
+<a class="btn btn-light" href="{% url 'customer_balance_pdf' customer.pk %}">PDF</a>
+{% if access.can_create_orders %}<a class="btn btn-primary" href="{% url 'order_create' %}?customer={{ customer.pk }}">＋ Sipariş Al</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="profile-strip">
+  <div><span>Telefon</span><strong>{{ customer.phone|default:'-' }}</strong></div>
+  <div><span>E-posta</span><strong>{{ customer.email|default:'-' }}</strong></div>
+  <div><span>Satış Temsilcisi</span><strong>{{ customer.assigned_salesperson.get_full_name|default:'Atanmamış' }}</strong></div>
+  {% if access.can_manage_customers %}<a href="{% url 'customer_edit' customer.pk %}">Düzenle</a>{% endif %}
+</div>
+
+<div class="section-head"><div><h2>Bağlantılı Mallar</h2><p>Fatura bazında güncel hak, sipariş ve kullanılabilir adetler</p></div><a href="{% url 'customer_balance_pdf' customer.pk %}">Listeyi PDF indir</a></div>
+<div class="table-card customer-balance-wrap">
+  <table class="data-table customer-balance-data-table">
+    <thead>
+      <tr>
+        <th>Ürün</th>
+        <th>Barkod</th>
+        <th>Satış Faturası</th>
+        <th class="qty-head">Toplam Hak</th>
+        <th class="qty-head">Teslim</th>
+        <th class="qty-head">Sipariş</th>
+        <th class="qty-head">Kullanılabilir</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in items %}
+      <tr>
+        <td><strong>{{ i.product.name }}</strong>{% if i.is_free_item %}<small>Bedelsiz kalem</small>{% endif %}</td>
+        <td class="barcode-column">{{ i.product.barcode }}</td>
+        <td class="invoice-column">
+          <a class="table-link" href="{% url 'connection_detail' i.connection.pk %}">{{ i.connection.invoice_no }}</a>
+          <small>{{ i.connection.invoice_date|date:'d.m.Y' }}</small>
+        </td>
+        <td class="qty-column"><strong>{{ i.effective_quantity|adet }}</strong></td>
+        <td class="qty-column"><strong>{{ i.delivered_quantity|adet }}</strong></td>
+        <td class="qty-column"><strong>{{ i.reserved_quantity|adet }}</strong></td>
+        <td class="qty-column available-column"><strong>{{ i.available_quantity|adet }}</strong></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7"><div class="empty-state"><strong>Açık bağlantılı ürün yok</strong><p>Bu müşteri için henüz bağlantılı satış kaydedilmemiş.</p></div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="section-head movement-title"><div><h2>Son Ürün Sevkiyatları</h2><p>Hangi ürünün hangi satış faturasına istinaden çıktığı</p></div><a href="{% url 'customer_history' customer.pk %}">Tüm geçmişi aç</a></div>
+<div class="table-card compact-table-card">
+  <table class="data-table">
+    <thead><tr><th>Tarih / Sevk</th><th>Ürün</th><th>İstinaden Satış Faturası</th><th>Teslim</th></tr></thead>
+    <tbody>
+      {% for line in shipment_lines %}
+      <tr><td data-label="Tarih / Sevk"><a class="table-link" href="{% url 'shipment_detail' line.shipment.pk %}">{{ line.shipment.number }}</a><small>{{ line.shipment.delivery_date|date:'d.m.Y' }}</small></td><td data-label="Ürün"><strong>{{ line.connection_item.product.name }}</strong><small>{{ line.connection_item.product.barcode }}</small></td><td data-label="İstinaden Satış Faturası"><strong>{{ line.connection_item.connection.invoice_no }}</strong><small>{{ line.connection_item.connection.invoice_date|date:'d.m.Y' }}</small></td><td data-label="Teslim"><strong>{{ line.quantity_delivered|adet }}</strong> Adet</td></tr>
+      {% empty %}<tr><td colspan="4"><div class="empty-mini">Kesinleşmiş sevkiyat hareketi yok.</div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="triple-grid">
+  <div class="panel"><div class="panel-head"><h2>Son Bağlantılar</h2></div>{% for x in connections %}<a class="list-row" href="{% url 'connection_detail' x.pk %}"><div><strong>{{ x.invoice_no }}</strong><span>{{ x.invoice_date|date:'d.m.Y' }}</span></div><span class="status status-{{ x.status|lower }}">{{ x.get_status_display }}</span></a>{% empty %}<div class="empty-mini">Kayıt yok.</div>{% endfor %}</div>
+  <div class="panel"><div class="panel-head"><h2>Son Siparişler</h2></div>{% for x in orders %}<a class="list-row" href="{% url 'order_detail' x.pk %}"><div><strong>{{ x.number }}</strong><span>{{ x.order_date|date:'d.m.Y' }}</span></div><span class="status status-{{ x.status|lower }}">{{ x.get_status_display }}</span></a>{% empty %}<div class="empty-mini">Kayıt yok.</div>{% endfor %}</div>
+  <div class="panel"><div class="panel-head"><h2>Son Sevkiyatlar</h2></div>{% for x in shipments %}<a class="list-row" href="{% url 'shipment_detail' x.pk %}"><div><strong>{{ x.number }}</strong><span>{{ x.shipment_date|date:'d.m.Y' }}</span></div><span class="status status-{{ x.status|lower }}">{{ x.get_status_display }}</span></a>{% empty %}<div class="empty-mini">Kayıt yok.</div>{% endfor %}</div>
+</div>
+{% endblock %}

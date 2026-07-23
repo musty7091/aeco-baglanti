@@ -1,0 +1,62 @@
+{% load static %}
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#15171a">
+<title>{% block title %}AECO Bağlantılı Satış{% endblock %}</title>
+<link rel="manifest" href="{% url 'manifest' %}">
+<link rel="icon" href="{% static 'img/icon-192.png' %}">
+<link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
+<link rel="stylesheet" href="{% static 'css/app.css' %}?v=172">
+{% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% if user.is_authenticated %}
+<div class="app-shell">
+<aside class="sidebar">
+<a href="{% url 'dashboard' %}" class="brand"><img src="{% static 'img/aeco-logo.png' %}" alt="AECO"><span>Bağlantılı Satış</span></a>
+<nav class="side-nav">
+<a class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}"><span>⌂</span>Ana Sayfa</a>
+{% if access.can_view_customers %}<a class="{% if 'customer' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'customer_list' %}"><span>◉</span>Müşteriler</a>{% endif %}
+{% if access.can_view_connections %}<a class="{% if 'connection' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'connection_list' %}"><span>▣</span>Bağlantılar</a>{% endif %}
+{% if access.can_view_orders %}<a class="{% if 'order' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'order_list' %}"><span>✎</span>Siparişler</a>{% endif %}
+{% if access.can_view_shipments %}<a class="{% if 'shipment' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'shipment_list' %}"><span>➜</span>Sevkiyatlar</a>{% endif %}
+{% if access.can_view_products %}<a class="{% if request.resolver_match.url_name == 'product_list' %}active{% endif %}" href="{% url 'product_list' %}"><span>◇</span>Ürünler</a>{% endif %}
+{% if access.can_view_reports %}<a class="{% if request.resolver_match.url_name == 'reports' %}active{% endif %}" href="{% url 'reports' %}"><span>▥</span>Raporlar</a>{% endif %}
+{% if access.can_view_audit %}<div class="nav-label">{% if access.can_view_all_audit %}YÖNETİM{% else %}HESABIM{% endif %}</div><a href="{% url 'audit_list' %}"><span>◷</span>{% if access.can_view_all_audit %}İşlem Geçmişi{% else %}İşlem Geçmişim{% endif %}</a>{% endif %}
+{% if access.can_manage_system %}<a href="{% url 'user_list' %}"><span>♙</span>Kullanıcılar</a><a href="{% url 'warehouse_list' %}"><span>▤</span>Depolar</a><a href="{% url 'transport_settings' %}"><span>▰</span>Araçlar</a><a href="{% url 'company_settings' %}"><span>⚙</span>Şirket Ayarları</a>{% endif %}
+</nav>
+<div class="side-user"><div class="avatar">{{ user.first_name|default:user.username|slice:':1'|upper }}</div><div><strong>{{ user.get_full_name|default:user.username }}</strong><small>{{ user.profile.get_role_display }}</small></div><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button title="Çıkış">↪</button></form></div>
+</aside>
+<main class="main-area">
+<header class="topbar"><div><button class="mobile-menu" data-drawer-open>☰</button><h1>{% block page_title %}AECO{% endblock %}</h1><p>{% block page_subtitle %}{% endblock %}</p></div><div class="top-actions">{% block top_actions %}{% endblock %}<button class="icon-btn" data-theme-toggle title="Tema">◐</button></div></header>
+{% if messages %}<div class="messages">{% for message in messages %}<div class="message {{ message.tags }}"><span>{{ message }}</span><button onclick="this.parentElement.remove()">×</button></div>{% endfor %}</div>{% endif %}
+<section class="content">{% block content %}{% endblock %}</section>
+</main>
+<nav class="mobile-nav">
+<a href="{% url 'dashboard' %}"><span>⌂</span>Ana</a>
+{% if access.can_view_customers %}<a href="{% url 'customer_list' %}"><span>◉</span>Müşteri</a>{% endif %}
+{% if access.can_create_orders %}<a class="primary" href="{% url 'order_create' %}"><span>＋</span>Sipariş</a>{% elif access.can_view_orders %}<a class="primary" href="{% url 'order_list' %}"><span>✎</span>Sipariş</a>{% elif access.can_view_shipments %}<a class="primary" href="{% url 'shipment_list' %}"><span>➜</span>Sevk</a>{% endif %}
+{% if access.can_view_shipments and not access.is_dispatch %}<a href="{% url 'shipment_list' %}"><span>➜</span>Sevk</a>{% endif %}
+<button data-mobile-more><span>•••</span>Diğer</button>
+</nav>
+<div class="mobile-more" data-mobile-sheet>
+<div class="sheet-handle"></div>
+{% if access.can_view_connections %}<a href="{% url 'connection_list' %}">Bağlantılı satışlar</a>{% endif %}
+{% if access.can_view_orders %}<a href="{% url 'order_list' %}">Siparişler</a>{% endif %}
+{% if access.can_view_shipments %}<a href="{% url 'shipment_list' %}">Sevkiyatlar</a>{% endif %}
+{% if access.can_view_products %}<a href="{% url 'product_list' %}">Ürünler</a>{% endif %}
+{% if access.can_view_reports %}<a href="{% url 'reports' %}">Raporlar</a>{% endif %}
+{% if access.can_view_audit %}<a href="{% url 'audit_list' %}">{% if access.can_view_all_audit %}İşlem geçmişi{% else %}İşlem geçmişim{% endif %}</a>{% endif %}
+{% if access.can_manage_system %}<a href="{% url 'transport_settings' %}">Araçlar</a><a href="{% url 'warehouse_list' %}">Depolar</a><a href="{% url 'user_list' %}">Kullanıcılar</a>{% endif %}
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button>Güvenli çıkış</button></form>
+</div>
+<div class="sheet-backdrop" data-sheet-close></div>
+</div>
+{% else %}{% block anonymous %}{% endblock %}{% endif %}
+<script src="{% static 'js/app.js' %}?v=172"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
