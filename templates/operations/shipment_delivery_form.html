@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block page_title %}Teslimatı Tamamla{% endblock %}
+{% block page_title %}Teslim Et{% endblock %}
 {% block page_subtitle %}{{ shipment.number }} • {{ shipment.customer.name }}{% endblock %}
 {% block content %}
 <form method="post" enctype="multipart/form-data" class="modern-form delivery-completion-form" data-delivery-form>
@@ -8,7 +8,7 @@
 
   <div class="delivery-warning">
     <strong>Bu işlem fatura bakiyelerini düşürür.</strong>
-    <span>İmza ve teslimat kanıt fotoğrafları yüklenmeden teslimat kesinleştirilemez.</span>
+    <span>İmzalı sevk tutanağını müşteriden teslim alın. Teslimat fotoğrafı isteğe bağlıdır.</span>
   </div>
 
   <div class="form-panel">
@@ -20,36 +20,16 @@
   </div>
 
   <div class="camera-grid">
-    <label class="camera-card" for="{{ form.receiver_signature.id_for_label }}">
-      <span class="camera-icon">✍️</span>
-      <strong>İmza Fotoğrafını Çek</strong>
-      <small>İmzalanmış formun veya teslim alan imzasının net fotoğrafını çekin.</small>
-      {{ form.receiver_signature }}
-      <span class="camera-action">Kamerayı Aç / Fotoğraf Seç</span>
-      <img class="camera-preview" data-camera-preview="signature" alt="İmza fotoğrafı önizlemesi" hidden>
-      {% for error in form.receiver_signature.errors %}<em>{{ error }}</em>{% endfor %}
-    </label>
-
     <label class="camera-card" for="{{ form.delivery_proof.id_for_label }}">
       <span class="camera-icon">📦</span>
-      <strong>Teslimat Kanıtını Çek</strong>
-      <small>Teslim edilen ürünleri ve mümkünse teslim noktasını gösteren fotoğraf çekin.</small>
+      <strong>Teslimat Fotoğrafı</strong>
+      <small>İsteğe bağlı: teslim edilen ürünleri gösteren fotoğraf.</small>
       {{ form.delivery_proof }}
       <span class="camera-action">Kamerayı Aç / Fotoğraf Seç</span>
       <img class="camera-preview" data-camera-preview="proof" alt="Teslimat fotoğrafı önizlemesi" hidden>
       {% for error in form.delivery_proof.errors %}<em>{{ error }}</em>{% endfor %}
     </label>
   </div>
-
-  <details class="optional-note-panel" {% if form.delivery_notes.value %}open{% endif %}>
-    <summary>
-      <span>＋ Teslimatla ilgili açıklama ekle</span>
-      <small>İsteğe bağlı</small>
-    </summary>
-    <div class="optional-note-content">
-      <div class="field"><label>{{ form.delivery_notes.label }}</label>{{ form.delivery_notes }}{{ form.delivery_notes.errors }}</div>
-    </div>
-  </details>
 
   <div class="table-card delivery-summary-table">
     <table class="data-table">

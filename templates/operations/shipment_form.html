@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block page_title %}{% if edit_mode %}Sevkiyatı Düzenle{% else %}Yeni Sevkiyat{% endif %}{% endblock %}
+{% block page_title %}{% if edit_mode %}Sevkiyatı Düzenle{% else %}Sevk Et{% endif %}{% endblock %}
 {% block page_subtitle %}{{ order.number }} • {{ order.customer.name }}{% endblock %}
 {% block content %}
 <form method="post" enctype="multipart/form-data" class="modern-form">
@@ -7,22 +7,19 @@
 
   <div class="form-panel">
     <div class="section-head">
-      <div><h2>Sevk Planı</h2><p>Depo, tarih, araç ve sevkiyat görevlisi bilgileri</p></div>
+      <div><h2>Sevk Bilgisi</h2><p>Sevkiyat kaydedildiği anda yola çıkmış sayılır</p></div>
     </div>
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
     <div class="form-grid">
-      <div class="field"><label>{{ form.warehouse.label }}</label>{{ form.warehouse }}{{ form.warehouse.errors }}</div>
+      {% if form.warehouse.is_hidden %}{{ form.warehouse }}{% for error in form.warehouse.errors %}<div class="form-errors">Depo: {{ error }}</div>{% endfor %}{% else %}<div class="field"><label>{{ form.warehouse.label }}</label>{{ form.warehouse }}{{ form.warehouse.errors }}</div>{% endif %}
       <div class="field"><label>{{ form.shipment_date.label }}</label>{{ form.shipment_date }}{{ form.shipment_date.errors }}</div>
-      <div class="field"><label>{{ form.vehicle_plate.label }}</label>{{ form.vehicle_plate }}{{ form.vehicle_plate.errors }}</div>
-      <div class="field"><label>{{ form.assigned_dispatcher.label }}</label>{{ form.assigned_dispatcher }}{{ form.assigned_dispatcher.errors }}</div>
-      <div class="field"><label>{{ form.prepared_by_name.label }}</label>{{ form.prepared_by_name }}{{ form.prepared_by_name.errors }}</div>
-      <div class="field span-2"><label>{{ form.delivery_address.label }}</label>{{ form.delivery_address }}{{ form.delivery_address.errors }}</div>
     </div>
   </div>
 
-  <div class="camera-later-note"><strong>📷 Teslimat fotoğrafları teslim sırasında yüklenir.</strong><span>Sevkiyat personeli telefondan imza ve teslimat kanıt fotoğrafını çekerek teslimatı tamamlar.</span></div>
+  <div class="camera-later-note"><strong>📄 Sevk tutanağı</strong><span>Kaydettikten sonra tutanağı (PDF) yazdırın. Tutanakta bu sevkte giden ürünler ve müşterinin kalan bağlantı ürünleri yer alır; teslimatta müşteriye imzalatılır.</span></div>
 
   <div class="section-head movement-title">
-    <div><h2>Sevk Kalemleri</h2><p>Tek miktar girilir; hazırlama, yükleme ve teslim durumları sevkiyat aşamasından takip edilir</p></div>
+    <div><h2>Sevk Edilecek Ürünler</h2><p>Miktarlar siparişte kalanla dolu gelir; gerekirse azaltın</p></div>
   </div>
 
   <div class="shipment-line-table">
@@ -70,7 +67,7 @@
 
   <div class="sticky-submit">
     <button type="button" class="btn btn-light" onclick="history.back()">Vazgeç</button>
-    <button class="btn btn-primary">{% if edit_mode %}Değişiklikleri Kaydet{% else %}Sevk Taslağını Oluştur{% endif %}</button>
+    <button class="btn btn-primary">{% if edit_mode %}Değişiklikleri Kaydet{% else %}Sevk Et{% endif %}</button>
   </div>
 </form>
 {% endblock %}

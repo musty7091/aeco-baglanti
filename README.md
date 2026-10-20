@@ -1,4 +1,4 @@
-# AECO Bağlantılı Satış ve Sevkiyat Yönetimi v1.7.1
+# AECO Bağlantılı Satış ve Sevkiyat Yönetimi v1.8.0
 
 AECO TRADING LTD. için bağlantılı satış faturalarını, müşteri bakiyelerini, siparişleri ve sevkiyatları yerel ağda yöneten Django tabanlı Windows/PWA uygulamasıdır.
 

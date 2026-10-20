@@ -4,6 +4,7 @@
 {% block top_actions %}
 <a class="btn btn-light" href="{% url 'customer_history' customer.pk %}">Sevk Geçmişi</a>
 <a class="btn btn-light" href="{% url 'customer_balance_pdf' customer.pk %}">PDF</a>
+{% if access.can_export_balances %}<a class="btn btn-light" href="{% url 'data_export' 'connection_book' %}?customer={{ customer.pk }}">Excel</a>{% endif %}
 {% if access.can_create_orders %}<a class="btn btn-primary" href="{% url 'order_create' %}?customer={{ customer.pk }}">＋ Sipariş Al</a>{% endif %}
 {% endblock %}
 {% block content %}

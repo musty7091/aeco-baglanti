@@ -31,7 +31,11 @@ from .models import (
     Vehicle,
     Warehouse,
 )
-from .services import create_order_from_request, deliver_shipment, parse_quantity
+from openpyxl import load_workbook
+from PIL import Image
+
+from .pdf import shipment_pdf
+from .services import create_order_from_request, deliver_shipment, parse_quantity, shipment_balance_rows
 
 
 class CustomerCodeAndFormTests(TestCase):
@@ -364,8 +368,7 @@ class BusinessFlowTests(TestCase):
         with self.assertRaises(ValidationError):
             parse_quantity('18,5')
 
-    def test_shipment_form_contains_only_current_transport_fields(self):
-        Vehicle.objects.create(plate='KY 123', description='Dağıtım aracı')
+    def test_shipment_form_has_only_date(self):
         shipment = Shipment(
             order=self.create_approved_order('5'),
             customer=self.customer,
@@ -373,16 +376,11 @@ class BusinessFlowTests(TestCase):
             created_by=self.user,
         )
         form = ShipmentForm(instance=shipment)
-        self.assertIn(
-            ('KY 123', 'KY 123 - Dağıtım aracı'),
-            form.fields['vehicle_plate'].choices,
-        )
-        self.assertIn('assigned_dispatcher', form.fields)
-        self.assertIn('prepared_by_name', form.fields)
-        self.assertNotIn('driver_name', form.fields)
-        self.assertNotIn('checked_by_name', form.fields)
+        self.assertEqual(list(form.fields), ['warehouse', 'shipment_date'])
+        # Tek aktif depo varsa seçim gizlenir.
+        self.assertTrue(form.fields['warehouse'].widget.is_hidden)
 
-    def test_delivery_form_notes_are_optional(self):
+    def test_delivery_form_photos_optional_and_notes_removed(self):
         shipment = Shipment(
             order=self.create_approved_order('5'),
             customer=self.customer,
@@ -390,8 +388,8 @@ class BusinessFlowTests(TestCase):
             created_by=self.user,
         )
         form = ShipmentDeliveryForm(instance=shipment)
-        self.assertIn('delivery_notes', form.fields)
-        self.assertFalse(form.fields['delivery_notes'].required)
+        self.assertEqual(list(form.fields), ['delivery_date', 'delivered_to', 'delivery_proof'])
+        self.assertFalse(form.fields['delivery_proof'].required)
 
 
 class DemoDataCommandTests(TestCase):
@@ -572,21 +570,12 @@ class RolePermissionTests(TestCase):
         self.assertContains(response, 'ROLE-SIP-A')
         self.assertNotContains(response, 'ROLE-SIP-P')
 
-    def test_dispatch_sees_only_assigned_shipments(self):
+    def test_dispatch_sees_all_shipments(self):
+        # Sevkiyatlar personele atanmadığı için her sevkiyat personeli tüm sevkiyatları görür.
         self.client.force_login(self.dispatch)
         response = self.client.get(reverse('shipment_list'))
         self.assertContains(response, 'ROLE-SVK-1')
-        self.assertNotContains(response, 'ROLE-SVK-2')
-
-    def test_shipment_form_lists_only_dispatch_users(self):
-        form = ShipmentForm(instance=self.assigned_shipment)
-        usernames = set(
-            form.fields['assigned_dispatcher'].queryset.values_list('username', flat=True)
-        )
-        self.assertIn('role_dispatch', usernames)
-        self.assertIn('role_dispatch_2', usernames)
-        self.assertNotIn('role_warehouse', usernames)
-        self.assertNotIn('role_sales', usernames)
+        self.assertContains(response, 'ROLE-SVK-2')
 
 
 class WarehouseManagementTests(TestCase):
@@ -629,3 +618,141 @@ class WarehouseManagementTests(TestCase):
         self.warehouse.refresh_from_db()
         self.assertEqual(self.warehouse.name, 'Ana Depo Güncel')
         self.assertFalse(self.warehouse.is_active)
+
+
+class SimplifiedShipmentFlowTests(TestCase):
+    def setUp(self):
+        self.temp_media = tempfile.TemporaryDirectory()
+        self.media_override = self.settings(MEDIA_ROOT=self.temp_media.name)
+        self.media_override.enable()
+        self.admin = User.objects.create_user('flow_admin', password='Pass12345!', first_name='Ayşe', last_name='Yönetici')
+        self.admin.profile.role = UserProfile.Role.ADMIN
+        self.admin.profile.save()
+        self.driver = User.objects.create_user('flow_driver', password='Pass12345!', first_name='Mehmet')
+        self.driver.profile.role = UserProfile.Role.DISPATCH
+        self.driver.profile.save()
+        self.warehouse = Warehouse.objects.create(code='ANA', name='Ana Depo')
+        self.customer = Customer.objects.create(name='Akış Market')
+        self.product_a = Product.objects.create(barcode='8690000000201', name='Ürün A')
+        self.product_b = Product.objects.create(barcode='8690000000202', name='Ürün B')
+        self.connection = ConnectionSale.objects.create(
+            number='BGL-F1', customer=self.customer, invoice_no='FAT-F1',
+            invoice_date=timezone.localdate(), status=ConnectionSale.Status.ACTIVE,
+            created_by=self.admin, approved_by=self.admin, approved_at=timezone.now(),
+        )
+        self.line_a = ConnectionItem.objects.create(
+            connection=self.connection, product=self.product_a, quantity=100,
+            unit_price=Decimal('10.00'), vat_rate=Decimal('20.00'),
+        )
+        self.line_b = ConnectionItem.objects.create(
+            connection=self.connection, product=self.product_b, quantity=50,
+            unit_price=Decimal('5.00'), vat_rate=Decimal('0.00'),
+        )
+        self.order = create_order_from_request(
+            customer=self.customer, user=self.admin,
+            order_data={'order_date': timezone.localdate(), 'requested_delivery_date': None,
+                        'delivery_address': 'Lefkoşa', 'notes': ''},
+            quantities={str(self.line_a.pk): '30'},
+        )
+        self.order.status = Order.Status.APPROVED
+        self.order.approved_by = self.admin
+        self.order.approved_at = timezone.now()
+        self.order.save()
+        self.client.force_login(self.admin)
+
+    def tearDown(self):
+        self.media_override.disable()
+        self.temp_media.cleanup()
+
+    def ship(self, quantity='30'):
+        order_item = self.order.items.get()
+        response = self.client.post(reverse('shipment_create', args=[self.order.pk]), {
+            'warehouse': self.warehouse.pk,
+            'shipment_date': timezone.localdate().isoformat(),
+            f'quantity_{order_item.pk}': quantity,
+        })
+        shipment = Shipment.objects.get(order=self.order)
+        self.assertRedirects(response, reverse('shipment_detail', args=[shipment.pk]))
+        return shipment
+
+    def test_single_warehouse_is_prefilled_in_hidden_field(self):
+        response = self.client.get(reverse('shipment_create', args=[self.order.pk]))
+        self.assertContains(response, f'type="hidden" name="warehouse" value="{self.warehouse.pk}"')
+        self.assertContains(response, f'value="{timezone.localdate().isoformat()}"')
+
+    def test_shipment_starts_on_route_with_creator_and_order_address(self):
+        shipment = self.ship()
+        self.assertEqual(shipment.status, Shipment.Status.ON_ROUTE)
+        self.assertEqual(shipment.prepared_by_name, 'Ayşe Yönetici')
+        self.assertEqual(shipment.delivery_address, 'Lefkoşa')
+        self.assertEqual(shipment.items.get().quantity_delivered, 30)
+
+    def test_any_driver_can_deliver_without_photo(self):
+        shipment = self.ship()
+        self.client.force_login(self.driver)
+        response = self.client.post(reverse('shipment_deliver', args=[shipment.pk]), {
+            'delivery_date': timezone.localdate().isoformat(),
+            'delivered_to': 'Ali Veli',
+        })
+        self.assertRedirects(response, reverse('shipment_detail', args=[shipment.pk]))
+        shipment.refresh_from_db()
+        self.assertEqual(shipment.status, Shipment.Status.DELIVERED)
+        self.assertEqual(shipment.delivered_by, self.driver)
+        self.assertEqual(self.line_a.delivered_quantity, 30)
+
+    def test_delivery_with_optional_photo(self):
+        shipment = self.ship()
+        image = BytesIO()
+        Image.new('RGB', (40, 40), 'white').save(image, format='PNG')
+        upload = SimpleUploadedFile('teslim.png', image.getvalue(), content_type='image/png')
+        self.client.post(reverse('shipment_deliver', args=[shipment.pk]), {
+            'delivery_date': timezone.localdate().isoformat(),
+            'delivered_to': 'Ali Veli',
+            'delivery_proof': upload,
+        })
+        shipment.refresh_from_db()
+        self.assertEqual(shipment.status, Shipment.Status.DELIVERED)
+        self.assertTrue(shipment.delivery_proof)
+
+    def test_shipment_document_lists_remaining_customer_balance(self):
+        shipment = self.ship('30')
+        rows = {row['item'].pk: row for row in shipment_balance_rows(shipment)}
+        self.assertEqual(rows[self.line_a.pk]['this'], 30)
+        self.assertEqual(rows[self.line_a.pk]['remaining'], 70)
+        self.assertEqual(rows[self.line_b.pk]['this'], 0)
+        self.assertEqual(rows[self.line_b.pk]['remaining'], 50)
+        deliver_shipment(shipment=shipment, user=self.driver)
+        shipment.refresh_from_db()
+        rows = {row['item'].pk: row for row in shipment_balance_rows(shipment)}
+        self.assertEqual(rows[self.line_a.pk]['before'], 0)
+        self.assertEqual(rows[self.line_a.pk]['remaining'], 70)
+        self.assertTrue(shipment_pdf(shipment, 'http://test/verify/').startswith(b'%PDF'))
+
+    def test_connection_book_has_summary_and_customer_tabs(self):
+        shipment = self.ship('30')
+        deliver_shipment(shipment=shipment, user=self.driver)
+        Customer.objects.create(name='Boş Müşteri')
+        response = self.client.get(reverse('data_export', args=['connection_book']))
+        self.assertEqual(response.status_code, 200)
+        wb = load_workbook(BytesIO(response.content))
+        self.assertEqual(wb.sheetnames[0], 'Özet')
+        self.assertEqual(len(wb.sheetnames), 2)
+        rows = list(wb[wb.sheetnames[1]].iter_rows(values_only=True))
+        flat = [value for row in rows for value in row if value is not None]
+        self.assertIn('TESLİM GEÇMİŞİ', flat)
+        self.assertIn(shipment.number, flat)
+        total_row = next(row for row in rows if row[0] == 'TOPLAM')
+        self.assertEqual(total_row[5:10], (150, 30, 0, 120, 120))
+        # Kalan tutar: A 70 x 12,00 + B 50 x 5,00 = 1090,00
+        self.assertEqual(Decimal(str(total_row[14])), Decimal('1090.00'))
+        summary_total = next(row for row in wb['Özet'].iter_rows(values_only=True) if row[0] == 'TOPLAM')
+        self.assertEqual(summary_total[2], 1)
+        self.assertEqual(summary_total[6], 120)
+
+    def test_connection_book_single_customer_and_permissions(self):
+        Customer.objects.create(name='Başka Müşteri')
+        response = self.client.get(reverse('data_export', args=['connection_book']) + f'?customer={self.customer.pk}')
+        self.assertEqual(len(load_workbook(BytesIO(response.content)).sheetnames), 2)
+        self.client.force_login(self.driver)
+        response = self.client.get(reverse('data_export', args=['connection_book']))
+        self.assertRedirects(response, reverse('dashboard'))

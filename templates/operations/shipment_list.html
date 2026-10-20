@@ -46,13 +46,7 @@
       </span>
 
       <small>
-        {{ shipment.vehicle_plate|default:'Plaka belirtilmedi' }}
-        •
-        {% if shipment.assigned_dispatcher %}
-          {{ shipment.assigned_dispatcher.get_full_name|default:shipment.assigned_dispatcher.username }}
-        {% else %}
-          Sevkiyat personeli atanmadı
-        {% endif %}
+        {% if shipment.delivered_to %}Teslim alan: {{ shipment.delivered_to }}{% else %}Teslim bekleniyor{% endif %}
       </small>
     </div>
 

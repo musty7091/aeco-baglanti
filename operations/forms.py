@@ -38,6 +38,10 @@ class StyledFormMixin:
 class DateInput(forms.DateInput):
     input_type = 'date'
 
+    def __init__(self, attrs=None, format=None):
+        # Tarayıcı tarih kutusu yalnızca ISO biçimini (YYYY-AA-GG) gösterebilir.
+        super().__init__(attrs=attrs, format=format or '%Y-%m-%d')
+
 
 class IntegerQuantityInput(forms.NumberInput):
     input_type = 'number'
@@ -297,137 +301,56 @@ class OrderHeaderForm(StyledFormMixin, forms.ModelForm):
 
 
 class ShipmentForm(StyledFormMixin, forms.ModelForm):
-    vehicle_plate = forms.ChoiceField(
-        label='Araç plakası',
-        required=False,
-    )
-    prepared_by_name = forms.ChoiceField(
-        label='Hazırlayan personel',
-        required=False,
-    )
-
     class Meta:
         model = Shipment
-        fields = [
-            'warehouse',
-            'shipment_date',
-            'vehicle_plate',
-            'assigned_dispatcher',
-            'prepared_by_name',
-            'delivery_address',
-            'notes',
-        ]
+        fields = ['warehouse', 'shipment_date']
         labels = {
             'warehouse': 'Depo',
             'shipment_date': 'Sevk tarihi',
-            'assigned_dispatcher': 'Sevkiyat personeli',
-            'delivery_address': 'Teslimat adresi',
-            'notes': 'Sevk notları',
         }
         widgets = {
             'shipment_date': DateInput(),
-            'delivery_address': forms.Textarea(attrs={'rows': 3}),
-            'notes': forms.Textarea(attrs={'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        def with_current(choices, current):
-            values = {value for value, _label in choices}
-            if current and current not in values:
-                choices.append((current, current))
-            return [('', 'Seçiniz')] + choices
-
-        vehicle_choices = [
-            (vehicle.plate, str(vehicle))
-            for vehicle in Vehicle.objects.filter(is_active=True)
-        ]
-
-        staff_choices = []
-        for user in User.objects.filter(
-            is_active=True,
-            profile__active=True,
-        ).order_by('first_name', 'last_name', 'username'):
-            display = user.get_full_name().strip() or user.username
-            staff_choices.append((display, display))
-
-        self.fields['vehicle_plate'].choices = with_current(
-            vehicle_choices,
-            getattr(self.instance, 'vehicle_plate', ''),
-        )
-        self.fields['prepared_by_name'].choices = with_current(
-            staff_choices,
-            getattr(self.instance, 'prepared_by_name', ''),
-        )
-
-        dispatch_qs = User.objects.filter(
-            is_active=True,
-            profile__active=True,
-            profile__role=UserProfile.Role.DISPATCH,
-        ).order_by('first_name', 'last_name', 'username')
-
-        current_dispatcher_id = getattr(
-            self.instance,
-            'assigned_dispatcher_id',
-            None,
-        )
-
-        if current_dispatcher_id:
-            dispatch_qs = User.objects.filter(
-                Q(pk=current_dispatcher_id)
-                | Q(pk__in=dispatch_qs.values('pk'))
-            ).distinct().order_by(
-                'first_name',
-                'last_name',
-                'username',
-            )
-
-        self.fields['assigned_dispatcher'].queryset = dispatch_qs
-        self.fields[
-            'assigned_dispatcher'
-        ].empty_label = 'Sevkiyat personeli seçiniz'
+        warehouses = Warehouse.objects.filter(is_active=True)
+        current_warehouse_id = getattr(self.instance, 'warehouse_id', None)
+        if current_warehouse_id:
+            warehouses = Warehouse.objects.filter(Q(is_active=True) | Q(pk=current_warehouse_id))
+        self.fields['warehouse'].queryset = warehouses
+        # Tek depo varsa seçim gösterilmez; sevkiyat otomatik olarak o depoya yazılır.
+        if warehouses.count() == 1:
+            if not self.initial.get('warehouse'):
+                self.initial['warehouse'] = warehouses.first().pk
+            self.fields['warehouse'].widget = forms.HiddenInput()
 
 
 class ShipmentDeliveryForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Shipment
-        fields = [
-            'delivery_date', 'delivered_to',
-            'receiver_signature', 'delivery_proof', 'delivery_notes',
-        ]
+        fields = ['delivery_date', 'delivered_to', 'delivery_proof']
         labels = {
             'delivery_date': 'Teslim tarihi',
             'delivered_to': 'Teslim alan kişi',
-            'receiver_signature': 'İmza fotoğrafı',
-            'delivery_proof': 'Teslimat kanıt fotoğrafı',
-            'delivery_notes': 'Teslimat açıklaması',
+            'delivery_proof': 'Teslimat fotoğrafı',
         }
         widgets = {
             'delivery_date': DateInput(),
             'delivered_to': forms.TextInput(attrs={'autocomplete': 'name'}),
-            'receiver_signature': forms.FileInput(attrs={
-                'accept': 'image/*', 'capture': 'environment',
-                'data-camera-input': 'signature',
-            }),
             'delivery_proof': forms.FileInput(attrs={
                 'accept': 'image/*', 'capture': 'environment',
                 'data-camera-input': 'proof',
-            }),
-            'delivery_notes': forms.Textarea(attrs={
-                'rows': 3,
-                'placeholder': 'Yalnızca özel bir durum varsa açıklama ekleyin.',
             }),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['delivery_date'].required = True
-        self.fields['delivery_date'].initial = self.instance.delivery_date or timezone.localdate()
+        if not self.initial.get('delivery_date'):
+            self.initial['delivery_date'] = timezone.localdate()
         self.fields['delivered_to'].required = True
-        self.fields['delivery_notes'].required = False
-        self.fields['receiver_signature'].required = not bool(getattr(self.instance, 'receiver_signature', None))
-        self.fields['delivery_proof'].required = not bool(getattr(self.instance, 'delivery_proof', None))
+        self.fields['delivery_proof'].required = False
 
     @staticmethod
     def _validate_photo(file, label):
@@ -456,11 +379,8 @@ class ShipmentDeliveryForm(StyledFormMixin, forms.ModelForm):
         except Exception as exc:
             raise forms.ValidationError(f'{label} işlenemedi. Fotoğrafı yeniden çekin veya JPG/PNG olarak yükleyin.') from exc
 
-    def clean_receiver_signature(self):
-        return self._validate_photo(self.cleaned_data.get('receiver_signature'), 'İmza fotoğrafı')
-
     def clean_delivery_proof(self):
-        return self._validate_photo(self.cleaned_data.get('delivery_proof'), 'Teslimat kanıt fotoğrafı')
+        return self._validate_photo(self.cleaned_data.get('delivery_proof'), 'Teslimat fotoğrafı')
 
 
 class BalanceAdjustmentForm(StyledFormMixin, forms.ModelForm):

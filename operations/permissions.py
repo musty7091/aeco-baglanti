@@ -3,7 +3,6 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
 from django.shortcuts import redirect
 
 from .models import Customer, Order, Shipment, UserProfile
@@ -121,7 +120,8 @@ def shipments_for_user(user):
     if has_role(user, WAREHOUSE):
         return qs
     if has_role(user, DISPATCH):
-        return qs.filter(Q(assigned_dispatcher=user) | Q(delivered_by=user)).distinct()
+        # Sevkiyatlar personele atanmaz; sevkiyat personeli tüm sevkiyatları görür ve teslim eder.
+        return qs
     return qs.none()
 
 

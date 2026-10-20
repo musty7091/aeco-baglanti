@@ -4,7 +4,7 @@
 
 {% block top_actions %}
 <a class="btn btn-light" href="{% url 'shipment_pdf' shipment.pk %}">
-  PDF
+  Sevk Tutanağı (PDF)
 </a>
 
 {% if can_edit_shipment %}
@@ -15,7 +15,7 @@
 
 {% if can_deliver_shipment %}
 <a class="btn btn-primary" href="{% url 'shipment_deliver' shipment.pk %}">
-  Teslimatı Tamamla
+  Teslim Et
 </a>
 {% endif %}
 {% endblock %}
@@ -30,9 +30,7 @@
     <h2>{{ shipment.customer.name }}</h2>
 
     <p>
-      {{ shipment.shipment_date|date:'d.m.Y' }}
-      •
-      {{ shipment.vehicle_plate|default:'Plaka seçilmedi' }}
+      Sevk: {{ shipment.shipment_date|date:'d.m.Y' }}{% if shipment.delivery_date %} • Teslim: {{ shipment.delivery_date|date:'d.m.Y' }}{% endif %}
     </p>
   </div>
 
@@ -49,72 +47,16 @@
     </div>
 
     <div>
-      <small>Sevkiyat Personeli</small>
-      <strong class="small-stat">
-        {% if shipment.assigned_dispatcher %}
-          {{ shipment.assigned_dispatcher.get_full_name|default:shipment.assigned_dispatcher.username }}
-        {% else %}
-          Atanmadı
-        {% endif %}
-      </strong>
+      <small>Teslim Alan</small>
+      <strong class="small-stat">{{ shipment.delivered_to|default:'-' }}</strong>
     </div>
   </div>
 </div>
 
-{% if can_mark_preparing or can_mark_loaded or can_mark_on_route %}
-<div class="status-flow">
-  {% if can_mark_preparing %}
-  <form
-    method="post"
-    action="{% url 'shipment_status' shipment.pk 'PREPARING' %}"
-  >
-    {% csrf_token %}
-    <button>Hazırlamaya Başla</button>
-  </form>
-  {% else %}
-  <span class="{% if shipment.status == 'PREPARING' or shipment.status == 'LOADED' or shipment.status == 'ON_ROUTE' %}active{% endif %}">
-    Hazırlanıyor
-  </span>
-  {% endif %}
-
-  <i></i>
-
-  {% if can_mark_loaded %}
-  <form
-    method="post"
-    action="{% url 'shipment_status' shipment.pk 'LOADED' %}"
-  >
-    {% csrf_token %}
-    <button>Yüklendi</button>
-  </form>
-  {% else %}
-  <span class="{% if shipment.status == 'LOADED' or shipment.status == 'ON_ROUTE' %}active{% endif %}">
-    Yüklendi
-  </span>
-  {% endif %}
-
-  <i></i>
-
-  {% if can_mark_on_route %}
-  <form
-    method="post"
-    action="{% url 'shipment_status' shipment.pk 'ON_ROUTE' %}"
-  >
-    {% csrf_token %}
-    <button>Yola Çıkar</button>
-  </form>
-  {% else %}
-  <span class="{% if shipment.status == 'ON_ROUTE' %}active{% endif %}">
-    Yolda
-  </span>
-  {% endif %}
-</div>
-{% endif %}
-
 <div class="info-grid">
   <div>
-    <span>Depo</span>
-    <strong>{{ shipment.warehouse.name }}</strong>
+    <span>Sipariş</span>
+    <strong><a href="{% url 'order_detail' shipment.order_id %}">{{ shipment.order.number }}</a></strong>
   </div>
 
   <div>
@@ -123,23 +65,17 @@
   </div>
 
   <div>
-    <span>Araç Plakası</span>
-    <strong>{{ shipment.vehicle_plate|default:'-' }}</strong>
+    <span>Sevk Tarihi</span>
+    <strong>{{ shipment.shipment_date|date:'d.m.Y' }}</strong>
   </div>
 
   <div>
-    <span>Sevkiyat Personeli</span>
-    <strong>
-      {% if shipment.assigned_dispatcher %}
-        {{ shipment.assigned_dispatcher.get_full_name|default:shipment.assigned_dispatcher.username }}
-      {% else %}
-        Atanmadı
-      {% endif %}
-    </strong>
+    <span>Teslim Eden</span>
+    <strong>{% if shipment.delivered_by %}{{ shipment.delivered_by.get_full_name|default:shipment.delivered_by.username }}{% else %}-{% endif %}</strong>
   </div>
 
   <div>
-    <span>Hazırlayan Personel</span>
+    <span>Sevki Oluşturan</span>
     <strong>{{ shipment.prepared_by_name|default:'-' }}</strong>
   </div>
 
@@ -215,7 +151,7 @@
 
   {% if shipment.receiver_signature %}
   <a href="{{ shipment.receiver_signature.url }}" target="_blank">
-    <span>Teslim Alan İmzası</span>
+    <span>İmzalı Tutanak</span>
     <img src="{{ shipment.receiver_signature.url }}">
   </a>
   {% endif %}

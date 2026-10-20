@@ -1,1 +1,80 @@
-const CACHE='aeco-shell-v170';const ASSETS=['/static/css/app.css?v=170','/static/js/app.js?v=170','/static/img/aeco-logo.png','/static/img/icon-192.png'];self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>r).catch(()=>caches.match(e.request)))})
+const CACHE_NAME = 'aeco-shell-v173';
+
+const STATIC_ASSETS = [
+  '/static/css/app.css?v=172',
+  '/static/js/app.js?v=172',
+  '/static/img/aeco-logo.png',
+  '/static/img/icon-192.png'
+];
+
+self.addEventListener('install', event => {
+  self.skipWaiting();
+
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return Promise.allSettled(
+        STATIC_ASSETS.map(url => cache.add(url))
+      );
+    })
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .catch(() => {
+          return new Response(
+            'İnternet bağlantısı kurulamadı. Lütfen bağlantınızı kontrol edip tekrar deneyin.',
+            {
+              status: 503,
+              headers: {
+                'Content-Type': 'text/plain; charset=utf-8'
+              }
+            }
+          );
+        })
+    );
+    return;
+  }
+
+  event.respondWith(
+    fetch(request, { cache: 'no-store' })
+      .then(response => {
+        if (!response) {
+          throw new Error('Sunucudan boş yanıt alındı.');
+        }
+        return response;
+      })
+      .catch(async () => {
+        const cachedResponse = await caches.match(request);
+
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        return new Response('', {
+          status: 504,
+          statusText: 'Gateway Timeout'
+        });
+      })
+  );
+});

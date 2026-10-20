@@ -14,7 +14,8 @@ from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from .excel import customer_template, export_balances, export_customers, export_products, import_customers, import_products, product_template
+from .excel import (customer_template, export_balances, export_connection_book, export_customers, export_products,
+                    import_customers, import_products, product_template)
 from .forms import (BalanceAdjustmentForm, CompanySettingsForm, ConnectionItemFormSet, ConnectionSaleForm,
                     CustomerForm, ExcelUploadForm, OrderHeaderForm, ProductForm, ShipmentDeliveryForm, ShipmentForm,
                     UserCreateForm, UserEditForm, VehicleForm, WarehouseForm)
@@ -339,10 +340,10 @@ def shipment_list(request):
     q=request.GET.get('q','').strip()
     status=request.GET.get('status','')
     if q:
-        qs=qs.filter(Q(number__icontains=q)|Q(order__number__icontains=q)|Q(customer__name__icontains=q)|Q(vehicle_plate__icontains=q))
+        qs=qs.filter(Q(number__icontains=q)|Q(order__number__icontains=q)|Q(customer__name__icontains=q))
     if status:
         qs=qs.filter(status=status)
-    return render(request,'operations/shipment_list.html',{'page_obj':page(request,qs),'q':q,'status':status,'statuses':Shipment.Status.choices})
+    return render(request,'operations/shipment_list.html',{'page_obj':page(request,qs),'q':q,'status':status,'statuses':[(v,l) for v,l in Shipment.Status.choices if v in {Shipment.Status.ON_ROUTE,Shipment.Status.DELIVERED,Shipment.Status.CANCELLED}]})
 
 @role_required(ADMIN,MANAGEMENT,WAREHOUSE)
 def shipment_create(request,order_pk):
@@ -351,7 +352,7 @@ def shipment_create(request,order_pk):
         messages.error(request,'Sevkiyat için sipariş onaylanmış olmalıdır.')
         return redirect('order_detail',order.pk)
     obj=Shipment(order=order,customer=order.customer,created_by=request.user,delivery_address=order.delivery_address)
-    form=ShipmentForm(request.POST or None,request.FILES or None,instance=obj)
+    form=ShipmentForm(request.POST or None,instance=obj)
     remaining_items=[i for i in order.items.select_related('connection_item__product','connection_item__connection') if i.allocatable_quantity>0]
     if request.method=='POST' and form.is_valid():
         lines=[]
@@ -371,7 +372,10 @@ def shipment_create(request,order_pk):
                 shipment.order=locked_order
                 shipment.customer=locked_order.customer
                 shipment.created_by=request.user
-                shipment.status=Shipment.Status.DRAFT
+                shipment.prepared_by_name=request.user.get_full_name().strip() or request.user.username
+                shipment.delivery_address=locked_order.delivery_address
+                # Hazırlık/yükleme adımları kaldırıldı: sevk oluşturulduğu anda yola çıkmış sayılır.
+                shipment.status=Shipment.Status.ON_ROUTE
                 shipment.save()
                 if locked_order.status==Order.Status.APPROVED:
                     locked_order.status=Order.Status.PREPARING
@@ -382,7 +386,7 @@ def shipment_create(request,order_pk):
                         raise ValidationError(f'{locked_oi.connection_item.product.name}: başka bir sevkiyat nedeniyle kullanılabilir miktar değişti.')
                     ShipmentItem.objects.create(shipment=shipment,order_item=locked_oi,connection_item=locked_oi.connection_item,quantity_delivered=quantity)
             audit(request,'CREATE',shipment)
-            messages.success(request,'Sevk taslağı oluşturuldu. Miktar, yalnızca teslimat kesinleştiğinde ilgili faturadan düşecektir.')
+            messages.success(request,'Sevkiyat oluşturuldu. Sevk tutanağını yazdırıp teslimatta imzalatın; miktar teslim kesinleşince faturadan düşer.')
             return redirect('shipment_detail',shipment.pk)
         except ValidationError as exc:
             messages.error(request,' '.join(exc.messages))
@@ -395,7 +399,7 @@ def shipment_edit(request,pk):
     if shipment.status in [Shipment.Status.DELIVERED,Shipment.Status.CANCELLED]:
         messages.error(request,'Teslim edilmiş veya iptal edilmiş sevkiyat düzenlenemez.')
         return redirect('shipment_detail',pk)
-    form=ShipmentForm(request.POST or None,request.FILES or None,instance=shipment)
+    form=ShipmentForm(request.POST or None,instance=shipment)
     lines=list(shipment.items.select_related('order_item__connection_item__product','connection_item__connection'))
     if request.method=='POST' and form.is_valid():
         try:
@@ -414,7 +418,7 @@ def shipment_edit(request,pk):
                     line.quantity_delivered=quantity
                     line.save(update_fields=['quantity_delivered','updated_at'])
             audit(request,'UPDATE',shipment)
-            messages.success(request,'Sevkiyat taslağı güncellendi.')
+            messages.success(request,'Sevkiyat güncellendi.')
             return redirect('shipment_detail',pk)
         except ValidationError as exc:
             messages.error(request,' '.join(exc.messages))
@@ -428,65 +432,34 @@ def shipment_edit(request,pk):
 def shipment_detail(request,pk):
     obj=get_object_or_404(visible_shipments(request),pk=pk)
     terminal=obj.status in {Shipment.Status.DELIVERED,Shipment.Status.CANCELLED}
-    can_warehouse_action=has_role(request.user,ADMIN,MANAGEMENT,WAREHOUSE)
     can_dispatch_action=has_role(request.user,ADMIN,MANAGEMENT,DISPATCH)
     context={
         'shipment':obj,
         'items':obj.items.select_related('connection_item__product','connection_item__connection','order_item'),
-        'can_edit_shipment':can_warehouse_action and not terminal,
-        'can_mark_preparing':can_warehouse_action and obj.status==Shipment.Status.DRAFT,
-        'can_mark_loaded':can_warehouse_action and obj.status==Shipment.Status.PREPARING,
-        'can_mark_on_route':can_dispatch_action and obj.status==Shipment.Status.LOADED,
-        'can_deliver_shipment':can_dispatch_action and obj.status in {Shipment.Status.LOADED,Shipment.Status.ON_ROUTE},
+        'can_edit_shipment':has_role(request.user,ADMIN,MANAGEMENT,WAREHOUSE) and not terminal,
+        'can_deliver_shipment':can_dispatch_action and not terminal,
         'can_cancel_shipment':is_manager(request.user) and not terminal,
     }
     return render(request,'operations/shipment_detail.html',context)
 
-@role_required(ADMIN,MANAGEMENT,WAREHOUSE,DISPATCH)
-@require_POST
-def shipment_status(request,pk,status):
-    obj=get_object_or_404(visible_shipments(request),pk=pk)
-    role=get_role(request.user)
-    transitions={
-        Shipment.Status.DRAFT:Shipment.Status.PREPARING,
-        Shipment.Status.PREPARING:Shipment.Status.LOADED,
-        Shipment.Status.LOADED:Shipment.Status.ON_ROUTE,
-    }
-    expected=transitions.get(obj.status)
-    if obj.status in {Shipment.Status.DELIVERED,Shipment.Status.CANCELLED} or status!=expected:
-        messages.error(request,'Geçersiz veya sırası gelmemiş durum değişikliği.')
-    elif status in {Shipment.Status.PREPARING,Shipment.Status.LOADED} and role not in {ADMIN,MANAGEMENT,WAREHOUSE} and not request.user.is_superuser:
-        messages.error(request,'Bu aşama yalnızca depo veya yönetim tarafından tamamlanabilir.')
-    elif status==Shipment.Status.LOADED and not obj.assigned_dispatcher_id:
-        messages.error(request,'Sevkiyat personeli atanmadan sevkiyat Yüklendi durumuna geçirilemez.')
-    elif status==Shipment.Status.ON_ROUTE and role not in {ADMIN,MANAGEMENT,DISPATCH} and not request.user.is_superuser:
-        messages.error(request,'Sevkiyatı yola çıkarma yetkiniz bulunmuyor.')
-    else:
-        obj.status=status
-        obj.save(update_fields=['status','updated_at'])
-        audit(request,'STATUS',obj,{'status':status})
-        messages.success(request,'Sevkiyat durumu güncellendi.')
-    return redirect('shipment_detail',pk)
-
 @role_required(ADMIN,MANAGEMENT,DISPATCH)
 def shipment_deliver(request,pk):
     obj=get_object_or_404(visible_shipments(request),pk=pk)
-    if obj.status not in {Shipment.Status.LOADED,Shipment.Status.ON_ROUTE}:
-        messages.error(request,'Teslimat yalnızca yüklenmiş veya yolda durumundaki sevkiyat için kesinleştirilebilir.')
+    if obj.status in {Shipment.Status.DELIVERED,Shipment.Status.CANCELLED}:
+        messages.error(request,'Bu sevkiyat zaten teslim edilmiş veya iptal edilmiş.')
         return redirect('shipment_detail',pk)
     form=ShipmentDeliveryForm(request.POST or None,request.FILES or None,instance=obj)
     if request.method=='POST' and form.is_valid():
         try:
             with transaction.atomic():
                 shipment=form.save(commit=False)
-                shipment.save(update_fields=['delivery_date','delivered_to','receiver_signature','delivery_proof','delivery_notes','updated_at'])
+                shipment.save(update_fields=['delivery_date','delivered_to','delivery_proof','updated_at'])
                 deliver_shipment(shipment=shipment,user=request.user)
             audit(request,'DELIVER',obj,{
                 'delivered_to':shipment.delivered_to,
-                'signature_photo':bool(shipment.receiver_signature),
                 'delivery_photo':bool(shipment.delivery_proof),
             })
-            messages.success(request,'Teslimat fotoğraflarıyla birlikte kesinleştirildi; ilgili fatura bakiyeleri düşürüldü.')
+            messages.success(request,'Teslimat kesinleştirildi; ilgili fatura bakiyeleri düşürüldü.')
             return redirect('shipment_detail',pk)
         except ValidationError as exc:
             messages.error(request,' '.join(exc.messages))
@@ -578,6 +551,15 @@ def data_export(request,kind):
             return redirect('dashboard')
         lines=ConnectionItem.objects.select_related('connection__customer','product').filter(connection__customer__in=visible_customers(request)).exclude(connection__status=ConnectionSale.Status.CANCELLED)
         data,name=export_balances(lines),'baglanti_bakiyeleri.xlsx'
+    elif kind=='connection_book':
+        if role not in {ADMIN,MANAGEMENT,SALES} and not request.user.is_superuser:
+            messages.error(request,'Bağlantı raporu için yetkiniz bulunmuyor.')
+            return redirect('dashboard')
+        customers=visible_customers(request)
+        customer_id=request.GET.get('customer')
+        if customer_id and customer_id.isdigit():
+            customers=customers.filter(pk=customer_id)
+        data,name=export_connection_book(customers),f'baglanti_raporu_{timezone.localdate():%Y%m%d}.xlsx'
     else:
         raise Http404
     return attachment_response(data,name,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

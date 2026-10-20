@@ -1,6 +1,7 @@
 from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 from .models import AuditLog, ConnectionItem, DocumentCounter, Order, OrderItem, Shipment, ShipmentItem
 
@@ -62,6 +63,32 @@ def create_order_from_request(*, customer, user, order_data, quantities):
                 raise ValidationError(f'{item.product.name} / {item.connection.invoice_no}: kullanılabilir miktar {item.available_quantity}.')
             OrderItem.objects.create(order=order, connection_item=item, quantity_requested=qty)
         return order
+
+def shipment_balance_rows(shipment):
+    """Sevk tutanağı için müşterinin bağlantı bakiyesi: önceki teslim, bu sevk ve sevk sonrası kalan.
+
+    Teslim edilmiş sevkiyatta yalnızca bu sevkten önce teslim edilenler sayılır; böylece
+    tutanak sonradan yeniden basıldığında da teslim anındaki tabloyu gösterir.
+    """
+    this_quantities = {x.connection_item_id: x.quantity_delivered for x in shipment.items.all()}
+    previous = ShipmentItem.objects.filter(
+        connection_item__connection__customer_id=shipment.customer_id,
+        shipment__status=Shipment.Status.DELIVERED,
+    ).exclude(shipment=shipment)
+    if shipment.status == Shipment.Status.DELIVERED and shipment.delivered_at:
+        previous = previous.filter(shipment__delivered_at__lt=shipment.delivered_at)
+    delivered_before = dict(previous.values('connection_item_id').annotate(v=Sum('quantity_delivered')).values_list('connection_item_id', 'v'))
+    rows = []
+    items = ConnectionItem.objects.select_related('connection', 'product').filter(
+        connection__customer_id=shipment.customer_id,
+    ).exclude(connection__status='CANCELLED').order_by('connection__invoice_date', 'connection_id', 'product__name', 'id')
+    for item in items:
+        before = delivered_before.get(item.pk, 0)
+        this = this_quantities.get(item.pk, 0)
+        remaining = max(item.effective_quantity - before - this, 0)
+        if this or remaining:
+            rows.append({'item': item, 'total': item.effective_quantity, 'before': before, 'this': this, 'remaining': remaining})
+    return rows
 
 def deliver_shipment(*, shipment, user):
     with transaction.atomic():

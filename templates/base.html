@@ -26,7 +26,7 @@
 {% if access.can_view_products %}<a class="{% if request.resolver_match.url_name == 'product_list' %}active{% endif %}" href="{% url 'product_list' %}"><span>◇</span>Ürünler</a>{% endif %}
 {% if access.can_view_reports %}<a class="{% if request.resolver_match.url_name == 'reports' %}active{% endif %}" href="{% url 'reports' %}"><span>▥</span>Raporlar</a>{% endif %}
 {% if access.can_view_audit %}<div class="nav-label">{% if access.can_view_all_audit %}YÖNETİM{% else %}HESABIM{% endif %}</div><a href="{% url 'audit_list' %}"><span>◷</span>{% if access.can_view_all_audit %}İşlem Geçmişi{% else %}İşlem Geçmişim{% endif %}</a>{% endif %}
-{% if access.can_manage_system %}<a href="{% url 'user_list' %}"><span>♙</span>Kullanıcılar</a><a href="{% url 'warehouse_list' %}"><span>▤</span>Depolar</a><a href="{% url 'transport_settings' %}"><span>▰</span>Araçlar</a><a href="{% url 'company_settings' %}"><span>⚙</span>Şirket Ayarları</a>{% endif %}
+{% if access.can_manage_system %}<a href="{% url 'user_list' %}"><span>♙</span>Kullanıcılar</a><a href="{% url 'warehouse_list' %}"><span>▤</span>Depolar</a><a href="{% url 'company_settings' %}"><span>⚙</span>Şirket Ayarları</a>{% endif %}
 </nav>
 <div class="side-user"><div class="avatar">{{ user.first_name|default:user.username|slice:':1'|upper }}</div><div><strong>{{ user.get_full_name|default:user.username }}</strong><small>{{ user.profile.get_role_display }}</small></div><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button title="Çıkış">↪</button></form></div>
 </aside>
@@ -50,7 +50,7 @@
 {% if access.can_view_products %}<a href="{% url 'product_list' %}">Ürünler</a>{% endif %}
 {% if access.can_view_reports %}<a href="{% url 'reports' %}">Raporlar</a>{% endif %}
 {% if access.can_view_audit %}<a href="{% url 'audit_list' %}">{% if access.can_view_all_audit %}İşlem geçmişi{% else %}İşlem geçmişim{% endif %}</a>{% endif %}
-{% if access.can_manage_system %}<a href="{% url 'transport_settings' %}">Araçlar</a><a href="{% url 'warehouse_list' %}">Depolar</a><a href="{% url 'user_list' %}">Kullanıcılar</a>{% endif %}
+{% if access.can_manage_system %}<a href="{% url 'warehouse_list' %}">Depolar</a><a href="{% url 'user_list' %}">Kullanıcılar</a>{% endif %}
 <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button>Güvenli çıkış</button></form>
 </div>
 <div class="sheet-backdrop" data-sheet-close></div>

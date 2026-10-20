@@ -13,6 +13,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak, KeepTogether
 from .models import CompanySettings
+from .services import shipment_balance_rows
 
 RED=colors.HexColor('#E71922'); DARK=colors.HexColor('#17191C'); MUTED=colors.HexColor('#667085'); LIGHT=colors.HexColor('#F4F5F7'); BORDER=colors.HexColor('#D9DDE3')
 PORTRAIT_MARGIN = 15 * mm
@@ -283,16 +284,16 @@ def delivery_evidence_table(shipment):
 
 
 def shipment_pdf(shipment, absolute_verify_url):
-    dispatcher_name = (
-        shipment.assigned_dispatcher.get_full_name()
-        or shipment.assigned_dispatcher.username
-        if shipment.assigned_dispatcher
-        else '-'
+    # Teslim eden, teslimi sistemde kesinleştiren kullanıcıdır; teslimden önce elle doldurulur.
+    deliverer_name = (
+        shipment.delivered_by.get_full_name() or shipment.delivered_by.username
+        if shipment.delivered_by
+        else ''
     )
 
     story = [
         header_table(
-            'BAĞLANTILI MAL SEVK VE TESLİM FORMU',
+            'SEVK VE TESLİM TUTANAĞI',
             shipment.number,
             shipment.shipment_date.strftime('%d.%m.%Y'),
         ),
@@ -313,26 +314,14 @@ def shipment_pdf(shipment, absolute_verify_url):
             shipment.get_status_display(),
         ),
         (
-            'Araç Plakası',
-            shipment.vehicle_plate or '-',
-            'Sevkiyat Personeli',
-            dispatcher_name,
-        ),
-        (
+            'Teslimat Adresi',
+            shipment.delivery_address or '-',
             'Teslim Tarihi',
             (
                 shipment.delivery_date.strftime('%d.%m.%Y')
                 if shipment.delivery_date
                 else '-'
             ),
-            'Depo',
-            shipment.warehouse.name,
-        ),
-        (
-            'Teslimat Adresi',
-            shipment.delivery_address,
-            'Hazırlayan',
-            shipment.prepared_by_name or '-',
         ),
     ]))
 
@@ -373,14 +362,41 @@ def shipment_pdf(shipment, absolute_verify_url):
         ],
     ))
 
-    story.append(Spacer(1, 6 * mm))
+    balance_rows = [
+        [
+            commercial_line_name(row['item']),
+            row['item'].connection.invoice_no,
+            fmt(row['total']),
+            fmt(row['before']),
+            fmt(row['this']) if row['this'] else '-',
+            fmt(row['remaining']),
+        ]
+        for row in shipment_balance_rows(shipment)
+    ]
+    if balance_rows:
+        story.extend([
+            Spacer(1, 5 * mm),
+            Paragraph('MÜŞTERİNİN BAĞLANTI BAKİYESİ (BU SEVK SONRASI)', styles['AecoBody']),
+            Spacer(1, 2 * mm),
+            data_table(
+                ['Ürün', 'Fatura', 'Toplam Hak', 'Önceki Teslim', 'Bu Sevk', 'Kalan'],
+                balance_rows,
+                [64 * mm, 28 * mm, 22 * mm, 24 * mm, 20 * mm, 22 * mm],
+            ),
+        ])
+
+    statement = Paragraph(
+        'Yukarıda belirtilen ürünleri eksiksiz ve hasarsız olarak teslim aldım. '
+        'Kalan bağlantı bakiyesini kontrol ettim.',
+        styles['AecoBody'],
+    )
 
     sign = Table(
         [
             [
                 Paragraph('<b>Hazırlayan</b>', styles['AecoSmall']),
                 Paragraph('<b>Teslim Eden</b>', styles['AecoSmall']),
-                Paragraph('<b>Teslim Alan</b>', styles['AecoSmall']),
+                Paragraph('<b>Teslim Alan (Ad Soyad / İmza / Kaşe)</b>', styles['AecoSmall']),
                 qr_image(absolute_verify_url),
             ],
             [
@@ -389,11 +405,11 @@ def shipment_pdf(shipment, absolute_verify_url):
                     styles['AecoBody'],
                 ),
                 Paragraph(
-                    safe(dispatcher_name),
+                    safe(deliverer_name),
                     styles['AecoBody'],
                 ),
                 Paragraph(
-                    safe(shipment.delivered_to or '-'),
+                    safe(shipment.delivered_to or ''),
                     styles['AecoBody'],
                 ),
                 Paragraph(
@@ -424,7 +440,7 @@ def shipment_pdf(shipment, absolute_verify_url):
         ('LEFTPADDING', (0, 0), (-1, -1), 5),
     ]))
 
-    story.append(KeepTogether([sign]))
+    story.extend([Spacer(1, 5 * mm), KeepTogether([statement, Spacer(1, 3 * mm), sign])])
 
     if shipment.notes:
         story.extend([

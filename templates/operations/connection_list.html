@@ -2,6 +2,7 @@
 {% block page_title %}Bağlantılı Satışlar{% endblock %}
 {% block page_subtitle %}Satış faturaları ve müşteriye ait bağlantılı ürün bakiyeleri{% endblock %}
 {% block top_actions %}
+  {% if access.can_export_balances %}<a class="btn btn-light" href="{% url 'data_export' 'connection_book' %}">Excel Raporu</a>{% endif %}
   {% if access.can_manage_connections %}<a class="btn btn-primary" href="{% url 'connection_create' %}">＋ Yeni Bağlantı</a>{% endif %}
 {% endblock %}
 {% block content %}

@@ -1,0 +1,29 @@
+AECO Bağlantılı Satış v1.8.0
+
+Bu sürümde sevkiyat akışı sadeleştirildi ve tek dosyalık bağlantı raporu eklendi.
+Veritabanı şeması değişmedi; migrasyon gerekmez, mevcut veriler aynen korunur.
+
+Sevkiyat (2 adım):
+- Sevk Et: onaylı siparişte miktarlar siparişte kalanla dolu gelir; kaydedince sevkiyat
+  "Yolda" başlar. Araç, sevkiyat personeli, depo, hazırlayan, not ve adres seçimi kaldırıldı
+  (tek depo otomatik atanır, hazırlayan = sevki oluşturan, adres siparişten gelir).
+- Teslim Et: teslim alan kişi yazılır, teslimat fotoğrafı isteğe bağlıdır. Teslim eden,
+  giriş yapan kullanıcı olarak otomatik kaydedilir.
+- Hazırlanıyor / Yüklendi / Yola Çıkar ara adımları kaldırıldı.
+- İmzalı belge fotoğrafı alanı kaldırıldı; imzalı tutanak kağıt olarak geri gelir.
+- Sevkiyat personeli artık tüm sevkiyatları görür (atama olmadığı için).
+- Menüden "Araçlar" kaldırıldı (kayıtlı araçlar silinmedi).
+- Sevk tutanağı (PDF): bu sevkte giden ürünler + müşterinin sevk sonrası kalan bağlantı
+  bakiyesi + "teslim aldım" beyanı ve Teslim Eden / Teslim Alan imza-kaşe alanı.
+- Eski sevkiyatlardaki plaka, personel ve fotoğraflar kayıtlarda korunur.
+
+Excel:
+- Bağlantı Raporu: tek dosyada Özet sekmesi + her müşteri için ayrı sekme
+  (bağlantı satırları, miktarlar, tutarlar, kalan tutar ve teslim geçmişi).
+  Raporlar, Bağlantılar ve müşteri detay ekranlarından indirilir.
+
+Düzeltmeler:
+- Tarih alanları formlarda boş görünüyordu (ör. bağlantı düzenlerken fatura tarihi);
+  artık mevcut tarih ve varsayılan "bugün" doğru gösterilir.
+- Müşteri düzenleme ve bakiye düzeltme ekranlarındaki "Vazgeç" düğmesi (sunucudaki düzeltme
+  koda alındı).
