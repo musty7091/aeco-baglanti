@@ -297,6 +297,7 @@ def order_detail(request,pk):
     items=list(obj.items.select_related('connection_item__product','connection_item__connection'))
     shipments=obj.shipments.filter(pk__in=visible_shipments(request).values('pk'))
     has_active_shipments=shipments.exclude(status=Shipment.Status.CANCELLED).exists()
+    open_shipments=shipments.exclude(status__in=[Shipment.Status.DELIVERED,Shipment.Status.CANCELLED])
     can_manage=is_manager(request.user)
     can_ship=has_role(request.user,ADMIN,MANAGEMENT,WAREHOUSE) and obj.status in {
         Order.Status.APPROVED,Order.Status.PREPARING,Order.Status.PARTIAL,
@@ -307,6 +308,8 @@ def order_detail(request,pk):
         'order':obj,
         'items':items,
         'shipments':shipments,
+        'open_shipments':open_shipments,
+        'can_deliver_shipment':has_role(request.user,ADMIN,MANAGEMENT,DISPATCH),
         'can_approve_order':can_approve,
         'can_create_shipment':can_ship,
         'can_cancel_order':can_cancel,

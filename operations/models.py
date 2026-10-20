@@ -342,7 +342,7 @@ class Order(TimeStampedModel):
         DRAFT = 'DRAFT', 'Taslak'
         PENDING = 'PENDING', 'Onay Bekliyor'
         APPROVED = 'APPROVED', 'Onaylandı'
-        PREPARING = 'PREPARING', 'Hazırlanıyor'
+        PREPARING = 'PREPARING', 'Sevkte'
         PARTIAL = 'PARTIAL', 'Kısmi Sevk'
         COMPLETED = 'COMPLETED', 'Tamamlandı'
         CANCELLED = 'CANCELLED', 'İptal Edildi'

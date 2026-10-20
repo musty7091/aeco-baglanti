@@ -10,6 +10,9 @@ Sevkiyat (2 adım):
 - Teslim Et: teslim alan kişi yazılır, teslimat fotoğrafı isteğe bağlıdır. Teslim eden,
   giriş yapan kullanıcı olarak otomatik kaydedilir.
 - Hazırlanıyor / Yüklendi / Yola Çıkar ara adımları kaldırıldı.
+- Sipariş durumu "Hazırlanıyor" yerine "Sevkte" olarak gösterilir. Yolda sevkiyatı olan siparişin
+  sayfasında uyarı ve doğrudan "Teslim Et" düğmesi bulunur (v1.8.1; 0002 migrasyonu yalnızca
+  etiket değişikliğidir, veritabanında işlem yapmaz).
 - İmzalı belge fotoğrafı alanı kaldırıldı; imzalı tutanak kağıt olarak geri gelir.
 - Sevkiyat personeli artık tüm sevkiyatları görür (atama olmadığı için).
 - Menüden "Araçlar" kaldırıldı (kayıtlı araçlar silinmedi).

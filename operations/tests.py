@@ -687,6 +687,14 @@ class SimplifiedShipmentFlowTests(TestCase):
         self.assertEqual(shipment.delivery_address, 'Lefkoşa')
         self.assertEqual(shipment.items.get().quantity_delivered, 30)
 
+    def test_order_with_open_shipment_links_to_delivery(self):
+        shipment = self.ship()
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.get_status_display(), 'Sevkte')
+        response = self.client.get(reverse('order_detail', args=[self.order.pk]))
+        self.assertContains(response, reverse('shipment_deliver', args=[shipment.pk]))
+        self.assertNotContains(response, reverse('shipment_create', args=[self.order.pk]))
+
     def test_any_driver_can_deliver_without_photo(self):
         shipment = self.ship()
         self.client.force_login(self.driver)
