@@ -83,6 +83,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
+CSRF_FAILURE_VIEW = 'operations.views.csrf_failure'
 SESSION_COOKIE_AGE = 60 * 60 * 12
 SESSION_SAVE_EVERY_REQUEST = True
 SECURE_CONTENT_TYPE_NOSNIFF = True

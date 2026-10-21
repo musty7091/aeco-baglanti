@@ -30,3 +30,12 @@ Düzeltmeler:
   artık mevcut tarih ve varsayılan "bugün" doğru gösterilir.
 - Müşteri düzenleme ve bakiye düzeltme ekranlarındaki "Vazgeç" düğmesi (sunucudaki düzeltme
   koda alındı).
+
+v1.8.2 — Giriş ekranı:
+- Girişte görülen "403 / CSRF" hata sayfası giderildi. "Giriş Yap"a iki kez basılınca ya da
+  eski bir giriş sayfasından gönderim yapılınca artık hata yerine doğrudan panele geçilir;
+  oturum açık değilse anlaşılır bir "sayfanın süresi doldu" uyarısıyla form yeniden açılır.
+- Giriş düğmesi gönderimden sonra kilitlenir ("Giriş yapılıyor…").
+- Oturumu açık kullanıcı giriş sayfasına girerse doğrudan ana sayfaya yönlendirilir.
+- Mobil uyum: giriş alanları 16px (iPhone'da dokununca sayfa büyümesi önlendi), tablet ve
+  yatay ekranda tek sütun düzen, çentikli ekran güvenli alanları, şifreyi göster/gizle düğmesi.

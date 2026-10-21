@@ -1,8 +1,8 @@
-const CACHE_NAME = 'aeco-shell-v173';
+const CACHE_NAME = 'aeco-shell-v182';
 
 const STATIC_ASSETS = [
-  '/static/css/app.css?v=172',
-  '/static/js/app.js?v=172',
+  '/static/css/app.css?v=182',
+  '/static/js/app.js?v=182',
   '/static/img/aeco-logo.png',
   '/static/img/icon-192.png'
 ];

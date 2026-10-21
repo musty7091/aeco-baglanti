@@ -5,14 +5,16 @@ import zipfile
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect, render, resolve_url
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from .excel import (customer_template, export_balances, export_connection_book, export_customers, export_products,
                     import_customers, import_products, product_template)
@@ -37,6 +39,20 @@ PER_PAGE=25
 
 def page(request, queryset, n=PER_PAGE):
     return Paginator(queryset,n).get_page(request.GET.get('page'))
+
+
+def csrf_failure(request, reason=''):
+    """Süresi dolmuş/eski form gönderimlerinde Django'nun teknik 403 sayfası yerine anlaşılır yanıt verir."""
+    if request.path == resolve_url('login'):
+        if request.user.is_authenticated:
+            # Giriş başarılı olmuş, ikinci gönderim (ör. düğmeye iki kez basma) eski anahtarla gelmiştir.
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+                next_url = resolve_url(settings.LOGIN_REDIRECT_URL)
+            return redirect(next_url)
+        form = AuthenticationForm(request, initial={'username': request.POST.get('username', '')})
+        return render(request, 'registration/login.html', {'form': form, 'csrf_expired': True}, status=403)
+    return render(request, 'csrf_failure.html', status=403)
 
 def visible_customers(request):
     return customers_for_user(request.user)

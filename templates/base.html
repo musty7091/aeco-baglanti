@@ -9,7 +9,7 @@
 <link rel="manifest" href="{% url 'manifest' %}">
 <link rel="icon" href="{% static 'img/icon-192.png' %}">
 <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
-<link rel="stylesheet" href="{% static 'css/app.css' %}?v=172">
+<link rel="stylesheet" href="{% static 'css/app.css' %}?v=182">
 {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -56,7 +56,7 @@
 <div class="sheet-backdrop" data-sheet-close></div>
 </div>
 {% else %}{% block anonymous %}{% endblock %}{% endif %}
-<script src="{% static 'js/app.js' %}?v=172"></script>
+<script src="{% static 'js/app.js' %}?v=182"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% load static %}{% block title %}Sayfa yenilenmeli - AECO{% endblock %}{% block page_title %}Sayfa yenilenmeli{% endblock %}
+{% block content %}<div class="panel"><div class="message warning">Bu sayfanın güvenlik süresi doldu, işlem kaydedilmedi. Lütfen sayfayı yeniden açıp tekrar deneyin.</div><p><a class="btn btn-primary" href="{% url 'dashboard' %}">Ana sayfaya dön</a></p></div>{% endblock %}
+{% block body_class %}{% if not user.is_authenticated %}login-body{% endif %}{% endblock %}
+{% block anonymous %}<div class="login-wrap"><div class="login-visual"><img src="{% static 'img/aeco-logo.png' %}" alt="AECO"><h1>Bağlantılı Satış<br>ve Sevkiyat Yönetimi</h1></div>
+<div class="login-card"><div class="login-card-inner"><div class="login-logo"><img src="{% static 'img/aeco-logo.png' %}" alt="AECO"></div><h2>Sayfa yenilenmeli</h2><div class="message warning">Bu sayfanın güvenlik süresi doldu, işlem kaydedilmedi.</div><a class="btn btn-primary btn-lg btn-block" href="{% url 'login' %}">Giriş sayfasına git</a></div></div></div>{% endblock %}

@@ -437,6 +437,41 @@
     });
   });
 
+  // Çift tıklamada ikinci gönderim eski güvenlik anahtarıyla gider ve 403 hatası verir.
+  document.querySelectorAll('form[data-submit-once]').forEach((form) => {
+    const button = form.querySelector('button[type="submit"]');
+    if (!button) return;
+    const label = button.textContent;
+    const reset = () => {
+      button.disabled = false;
+      button.textContent = label;
+    };
+    form.addEventListener('submit', (event) => {
+      if (event.defaultPrevented || button.disabled) return;
+      button.disabled = true;
+      button.textContent = form.dataset.submitOnce;
+      window.setTimeout(reset, 15000);
+    });
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) reset();
+    });
+  });
+
+  document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    const input = button.parentElement.querySelector('input');
+    if (!input) return;
+    button.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      button.textContent = show ? 'Gizle' : 'Göster';
+      button.setAttribute('aria-label', show ? 'Şifreyi gizle' : 'Şifreyi göster');
+      input.focus();
+    });
+    input.form?.addEventListener('submit', () => {
+      input.type = 'password';
+    });
+  });
+
   document.querySelector('[data-delivery-form]')?.addEventListener('submit', (event) => {
     const button = event.currentTarget.querySelector('[data-delivery-submit]');
     if (button && !button.disabled) {

@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -764,3 +764,54 @@ class SimplifiedShipmentFlowTests(TestCase):
         self.client.force_login(self.driver)
         response = self.client.get(reverse('data_export', args=['connection_book']))
         self.assertRedirects(response, reverse('dashboard'))
+
+
+class LoginCsrfTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('giris_kullanici', password='Pass12345!')
+        self.client = Client(enforce_csrf_checks=True)
+        self.login_url = reverse('login')
+
+    def login_token(self):
+        response = self.client.get(self.login_url)
+        return response.context['csrf_token']
+
+    def test_double_submit_after_login_redirects_instead_of_error(self):
+        old_token = self.login_token()
+        data = {'username': 'giris_kullanici', 'password': 'Pass12345!', 'csrfmiddlewaretoken': old_token}
+        self.assertRedirects(self.client.post(self.login_url, data), reverse('dashboard'), fetch_redirect_response=False)
+        # İkinci basış: giriş anahtarı yenilendiği için eski anahtarla gelir.
+        response = self.client.post(self.login_url, data)
+        self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
+
+    def test_double_submit_keeps_safe_next_url(self):
+        old_token = self.login_token()
+        url = self.login_url + '?next=' + reverse('customer_list')
+        data = {'username': 'giris_kullanici', 'password': 'Pass12345!', 'csrfmiddlewaretoken': old_token}
+        self.client.post(url, data)
+        self.assertRedirects(self.client.post(url, data), reverse('customer_list'), fetch_redirect_response=False)
+        evil = self.login_url + '?next=https://example.com/'
+        self.assertRedirects(self.client.post(evil, data), reverse('dashboard'), fetch_redirect_response=False)
+
+    def test_stale_login_form_shows_friendly_message(self):
+        self.login_token()
+        response = self.client.post(self.login_url, {'username': 'giris_kullanici', 'password': 'x', 'csrfmiddlewaretoken': 'eski'})
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(response, 'güvenlik süresi doldu', status_code=403)
+        self.assertContains(response, 'value="giris_kullanici"', status_code=403)
+        self.assertContains(response, 'csrfmiddlewaretoken', status_code=403)
+
+    def test_logged_in_user_skips_login_page(self):
+        self.client.force_login(self.user)
+        self.assertRedirects(self.client.get(self.login_url), reverse('dashboard'), fetch_redirect_response=False)
+
+    def test_stale_form_elsewhere_shows_friendly_page(self):
+        self.client.force_login(self.user)
+        response = self.client.post(reverse('logout'), {'csrfmiddlewaretoken': 'eski'})
+        self.assertContains(response, 'Sayfa yenilenmeli', status_code=403)
+
+    def test_login_page_is_mobile_friendly(self):
+        response = self.client.get(self.login_url)
+        self.assertContains(response, 'data-submit-once')
+        self.assertContains(response, 'data-password-toggle')
+        self.assertContains(response, 'autocapitalize="none"')

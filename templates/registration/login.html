@@ -1,4 +1,14 @@
 {% extends 'base.html' %}{% load static %}{% block title %}Giriş - AECO{% endblock %}{% block body_class %}login-body{% endblock %}{% block anonymous %}
 <div class="login-wrap"><div class="login-visual"><img src="{% static 'img/aeco-logo.png' %}" alt="AECO"><h1>Bağlantılı Satış<br>ve Sevkiyat Yönetimi</h1><p>Satış faturalarından teslimata kadar her hareket kontrol altında.</p><div class="login-pills"><span>Fatura Bazlı Takip</span><span>Mobil Sipariş</span><span>Doğrulanabilir PDF</span></div></div>
-<div class="login-card"><div class="login-logo"><img src="{% static 'img/aeco-logo.png' %}" alt="AECO"></div><h2>Hoş geldiniz</h2><p>Güvenli çalışma alanınıza giriş yapın.</p>{% if form.errors %}<div class="message error">Kullanıcı adı veya şifre hatalı.</div>{% endif %}<form method="post" class="stack-form">{% csrf_token %}<label>Kullanıcı adı<div class="input-icon"><span>◉</span>{{ form.username }}</div></label><label>Şifre<div class="input-icon"><span>●</span>{{ form.password }}</div></label><button class="btn btn-primary btn-lg btn-block">Giriş Yap</button></form><small class="login-note">AECO TRADING LTD. • Yetkili kullanıcı erişimi</small></div></div>
+<div class="login-card"><div class="login-card-inner">
+<div class="login-logo"><img src="{% static 'img/aeco-logo.png' %}" alt="AECO"></div>
+<h2>Hoş geldiniz</h2><p>Güvenli çalışma alanınıza giriş yapın.</p>
+{% if csrf_expired %}<div class="message warning">Sayfanın güvenlik süresi doldu. Lütfen bilgilerinizi kontrol edip tekrar giriş yapın.</div>{% elif form.errors %}<div class="message error">Kullanıcı adı veya şifre hatalı.</div>{% endif %}
+<form method="post" class="stack-form login-form" data-submit-once="Giriş yapılıyor…">{% csrf_token %}
+<label>Kullanıcı adı<div class="input-icon"><span>◉</span>{{ form.username }}</div></label>
+<label>Şifre<div class="input-icon"><span>●</span>{{ form.password }}<button type="button" class="password-toggle" data-password-toggle aria-label="Şifreyi göster">Göster</button></div></label>
+<button type="submit" class="btn btn-primary btn-lg btn-block">Giriş Yap</button>
+</form>
+<small class="login-note">AECO TRADING LTD. • Yetkili kullanıcı erişimi</small>
+</div></div></div>
 {% endblock %}

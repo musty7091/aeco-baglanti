@@ -192,3 +192,28 @@ body.dark .timeline-item p{color:#e6ebf0;font-weight:700}
 body.dark .timeline-item small{color:#c5cdd6}
 body.dark .timeline-item code{background:#111417;color:#eff3f7;border:1px solid #31363d}
 body.dark .timeline-item:before{border-left-color:#3a4047}
+
+/* Giriş ekranı — mobil uyum (v1.8.2) */
+.login-wrap{min-height:100vh;min-height:100dvh}
+.login-card{color:#17191c}
+.login-card-inner{width:100%;max-width:400px;margin:0 auto}
+.login-card-inner>p{color:#68707d;font-size:13px;margin:0 0 22px}
+.login-card .message{margin-bottom:18px}
+.login-form>label{font-size:12px}
+.login-form .input-icon{grid-template-columns:44px minmax(0,1fr) auto;background:#fff;border-color:#d8dde3}
+.login-form .input-icon:focus-within{border-color:#979fa8;box-shadow:0 0 0 3px rgba(20,23,27,.06)}
+.login-form .input-icon input{font-size:16px;font-weight:500;width:100%;min-width:0;height:50px;padding:0 12px 0 2px;background:transparent;color:#17191c}
+.password-toggle{border:0;background:transparent;color:#68707d;font-size:12px;font-weight:700;padding:0 14px;cursor:pointer}
+.login-form .btn[disabled]{opacity:.75;cursor:progress}
+.login-card-inner .login-note{display:block}
+@media(max-width:900px),(max-height:520px){
+.login-body{background:#fff}
+.login-wrap{display:block;background:#fff}
+.login-visual{display:none}
+.login-card{min-height:100vh;min-height:100dvh;padding:calc(24px + env(safe-area-inset-top)) calc(22px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(22px + env(safe-area-inset-left))}
+.login-card-inner{margin:auto}
+.login-logo{display:block}
+.login-logo img{width:130px}
+.login-card h2{font-size:26px;margin-top:26px}
+.login-note{margin-top:22px}
+}
