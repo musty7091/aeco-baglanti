@@ -815,3 +815,47 @@ class LoginCsrfTests(TestCase):
         self.assertContains(response, 'data-submit-once')
         self.assertContains(response, 'data-password-toggle')
         self.assertContains(response, 'autocapitalize="none"')
+
+
+class BadQueryParameterTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user('param_admin', password='Pass12345!')
+        self.admin.profile.role = UserProfile.Role.ADMIN
+        self.admin.profile.save()
+        self.customer = Customer.objects.create(name='Parametre Müşteri')
+        self.client.force_login(self.admin)
+
+    def test_non_numeric_customer_on_order_form_is_not_found(self):
+        for value in ('abc', '1.5', 'undefined'):
+            self.assertEqual(self.client.get(reverse('order_create') + f'?customer={value}').status_code, 404)
+
+    def test_invalid_history_dates_are_ignored(self):
+        url = reverse('customer_history', args=[self.customer.pk])
+        self.assertEqual(self.client.get(url + '?date_from=abc&date_to=2026-13-45').status_code, 200)
+        self.assertEqual(self.client.get(url + '?date_from=2026-01-01&date_to=2026-12-31').status_code, 200)
+
+    def test_unknown_template_kind_is_not_found(self):
+        self.assertEqual(self.client.get(reverse('download_template', args=['unknown'])).status_code, 404)
+        self.assertEqual(self.client.get(reverse('download_template', args=['products'])).status_code, 200)
+
+
+class UploadNameTests(TestCase):
+    def test_uploaded_file_names_are_unguessable(self):
+        from .models import delivery_proof_upload_to, invoice_upload_to
+        first = invoice_upload_to(None, 'Taranan Fatura.PDF')
+        self.assertRegex(first, r'^invoices/\d{4}/\d{2}/taranan-fatura-[0-9a-f]{16}\.pdf$')
+        self.assertNotEqual(first, invoice_upload_to(None, 'Taranan Fatura.PDF'))
+        self.assertRegex(delivery_proof_upload_to(None, 'şğı.jpg'), r'^delivery_proofs/\d{4}/\d{2}/[a-z0-9-]*-?[0-9a-f]{16}\.jpg$')
+
+
+class SalespersonLabelTests(TestCase):
+    def test_salesperson_choices_show_full_name(self):
+        user = User.objects.create_user('etiket_satis', first_name='Berkan', last_name='Miralay')
+        user.profile.role = UserProfile.Role.SALES
+        user.profile.save()
+        nameless = User.objects.create_user('isimsiz_satis')
+        nameless.profile.role = UserProfile.Role.SALES
+        nameless.profile.save()
+        labels = [label for _, label in CustomerForm().fields['assigned_salesperson'].choices]
+        self.assertIn('Berkan Miralay', labels)
+        self.assertIn('isimsiz_satis', labels)

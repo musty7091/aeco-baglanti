@@ -93,6 +93,7 @@ class CustomerForm(StyledFormMixin, forms.ModelForm):
             ).distinct().order_by('first_name', 'last_name', 'username')
         self.fields['assigned_salesperson'].queryset = sales_qs
         self.fields['assigned_salesperson'].empty_label = 'Satış temsilcisi seçiniz'
+        self.fields['assigned_salesperson'].label_from_instance = lambda user: user.get_full_name() or user.username
 
 
 class ProductForm(StyledFormMixin, forms.ModelForm):

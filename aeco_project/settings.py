@@ -53,7 +53,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
-        'OPTIONS': {'timeout': 30},
+        # IMMEDIATE: eşzamanlı yazmalarda "database is locked" yerine kilidin açılması beklenir.
+        'OPTIONS': {'timeout': 30, 'transaction_mode': 'IMMEDIATE'},
     }
 }
 

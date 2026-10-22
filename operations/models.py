@@ -1,4 +1,6 @@
+import secrets
 import uuid
+from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -6,6 +8,27 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import F, Sum, Q
 from django.utils import timezone
+from django.utils.text import slugify
+
+
+def _unguessable_name(folder, filename):
+    """Medya klasörü oturumsuz sunulduğundan dosya adına tahmin edilemez bir ek koyar."""
+    path = Path(filename)
+    stem = slugify(path.stem)[:40] or 'dosya'
+    return f'{folder}/{timezone.localdate():%Y/%m}/{stem}-{secrets.token_hex(8)}{path.suffix.lower()}'
+
+
+def invoice_upload_to(instance, filename):
+    return _unguessable_name('invoices', filename)
+
+
+def signature_upload_to(instance, filename):
+    return _unguessable_name('signatures', filename)
+
+
+def delivery_proof_upload_to(instance, filename):
+    return _unguessable_name('delivery_proofs', filename)
+
 
 ZERO = 0
 MONEY_ZERO = Decimal('0.00')
@@ -169,7 +192,7 @@ class ConnectionSale(TimeStampedModel):
     invoice_date = models.DateField()
     status = models.CharField(max_length=15, choices=Status.choices, default=Status.DRAFT)
     notes = models.TextField(blank=True)
-    invoice_attachment = models.FileField(upload_to='invoices/%Y/%m/', blank=True)
+    invoice_attachment = models.FileField(upload_to=invoice_upload_to, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='connections_created')
     approved_by = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True, related_name='connections_approved')
     approved_at = models.DateTimeField(null=True, blank=True)
@@ -444,8 +467,8 @@ class Shipment(TimeStampedModel):
     vehicle_plate = models.CharField(max_length=30, blank=True)
     prepared_by_name = models.CharField(max_length=120, blank=True)
     delivered_to = models.CharField(max_length=120, blank=True)
-    receiver_signature = models.ImageField(upload_to='signatures/%Y/%m/', blank=True)
-    delivery_proof = models.ImageField(upload_to='delivery_proofs/%Y/%m/', blank=True)
+    receiver_signature = models.ImageField(upload_to=signature_upload_to, blank=True)
+    delivery_proof = models.ImageField(upload_to=delivery_proof_upload_to, blank=True)
     delivery_notes = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     verification_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)

@@ -45,3 +45,13 @@ v1.8.3 — Mobil "Diğer" menüsü:
   engelliyordu (özellikle yönetici rolünde, uzun listede). Artık kapalıyken tamamen gizli.
 - Kısa ekranlarda/yatay konumda menü içinde kaydırma; açıkken arka sayfa kaymaz.
 - Menü aşağı kaydırılarak kapatılabilir; geri tuşuyla dönüldüğünde açık kalmaz.
+
+v1.8.4 — Uçtan uca kontrol düzeltmeleri:
+- Aynı anda yapılan kayıtlarda (ör. sevkiyat formuna art arda basma) görülebilen
+  "database is locked" sunucu hatası giderildi; istekler artık sırayla işlenir.
+- Yüklenen fatura ekleri, teslimat fotoğrafları ve imzalar tahmin edilemez dosya adlarıyla
+  saklanır (medya klasörü oturumsuz sunulduğu için). Mevcut dosyalar değişmez.
+- Siparişte geçersiz müşteri numarası ve müşteri geçmişinde geçersiz tarih artık sunucu
+  hatası vermez; bilinmeyen şablon adresi 404 döner.
+- Müşteri formunda satış temsilcileri kullanıcı adı yerine ad soyad ile listelenir.
+- 0003 veritabanı geçişi yalnızca dosya adı kuralını kaydeder; tabloda değişiklik yapmaz.

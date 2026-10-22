@@ -14,6 +14,7 @@ from django.db.models import Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render, resolve_url
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from .excel import (customer_template, export_balances, export_connection_book, export_customers, export_products,
@@ -39,6 +40,15 @@ PER_PAGE=25
 
 def page(request, queryset, n=PER_PAGE):
     return Paginator(queryset,n).get_page(request.GET.get('page'))
+
+
+def valid_date(value):
+    """Adres çubuğundan gelen tarihi doğrular; geçersizse filtre uygulanmaz."""
+    try:
+        parsed = parse_date(value or '')
+    except ValueError:
+        return None
+    return value if parsed else None
 
 
 def csrf_failure(request, reason=''):
@@ -158,8 +168,8 @@ def customer_detail(request,pk):
 def customer_history(request,pk):
     customer=get_object_or_404(visible_customers(request),pk=pk)
     qs=ShipmentItem.objects.select_related('shipment','connection_item__product','connection_item__connection').filter(shipment__customer=customer).order_by('-shipment__shipment_date','-id')
-    date_from=request.GET.get('date_from')
-    date_to=request.GET.get('date_to')
+    date_from=valid_date(request.GET.get('date_from'))
+    date_to=valid_date(request.GET.get('date_to'))
     if date_from:
         qs=qs.filter(shipment__shipment_date__gte=date_from)
     if date_to:
@@ -295,6 +305,8 @@ def order_list(request):
 @role_required(UserProfile.Role.ADMIN,UserProfile.Role.MANAGEMENT,UserProfile.Role.SALES)
 def order_create(request):
     customers=visible_customers(request).filter(is_active=True); customer_id=request.POST.get('customer') or request.GET.get('customer');customer=None;available_items=[]
+    if customer_id and not customer_id.isdigit():
+        raise Http404
     if customer_id:
         customer=get_object_or_404(customers,pk=customer_id)
         candidates=ConnectionItem.objects.select_related('connection','product').filter(connection__customer=customer,connection__status__in=[ConnectionSale.Status.ACTIVE,ConnectionSale.Status.PARTIAL]).order_by('product__name','connection__invoice_date')
@@ -549,6 +561,8 @@ def data_import(request,kind):
 
 @manage_required
 def download_template(request,kind):
+    if kind not in {'products','customers'}:
+        raise Http404
     data=product_template() if kind=='products' else customer_template();return attachment_response(data,f'{kind}_sablon.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 @login_required
