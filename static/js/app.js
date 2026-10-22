@@ -11,14 +11,50 @@
   const mobileSheet = document.querySelector('[data-mobile-sheet]');
   const sheetBackdrop = document.querySelector('[data-sheet-close]');
   const closeSheet = () => {
-    mobileSheet?.classList.remove('open');
+    mobileSheet?.classList.remove('open', 'dragging');
+    if (mobileSheet) mobileSheet.style.transform = '';
     sheetBackdrop?.classList.remove('open');
+    body.classList.remove('modal-open');
   };
   document.querySelector('[data-mobile-more]')?.addEventListener('click', () => {
-    mobileSheet?.classList.add('open');
+    if (!mobileSheet) return;
+    mobileSheet.scrollTop = 0;
+    mobileSheet.classList.add('open');
     sheetBackdrop?.classList.add('open');
+    body.classList.add('modal-open');
   });
   sheetBackdrop?.addEventListener('click', closeSheet);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && mobileSheet?.classList.contains('open')) closeSheet();
+  });
+  // Geri tuşuyla dönüldüğünde menü açık kalmasın.
+  window.addEventListener('pagehide', closeSheet);
+
+  // Menüyü aşağı kaydırarak kapatma.
+  let dragStartY = null;
+  let dragDistance = 0;
+  mobileSheet?.addEventListener('touchstart', (event) => {
+    if (mobileSheet.scrollTop > 0) return;
+    dragStartY = event.touches[0].clientY;
+    dragDistance = 0;
+  }, { passive: true });
+  mobileSheet?.addEventListener('touchmove', (event) => {
+    if (dragStartY === null) return;
+    dragDistance = event.touches[0].clientY - dragStartY;
+    if (dragDistance <= 0) {
+      mobileSheet.style.transform = '';
+      return;
+    }
+    mobileSheet.classList.add('dragging');
+    mobileSheet.style.transform = `translateY(${dragDistance}px)`;
+  }, { passive: true });
+  mobileSheet?.addEventListener('touchend', () => {
+    if (dragStartY === null) return;
+    dragStartY = null;
+    mobileSheet.classList.remove('dragging');
+    if (dragDistance > 70) closeSheet();
+    else mobileSheet.style.transform = '';
+  });
 
   document.querySelectorAll('form[data-confirm]').forEach((form) => {
     form.addEventListener('submit', (event) => {

@@ -39,3 +39,9 @@ v1.8.2 — Giriş ekranı:
 - Oturumu açık kullanıcı giriş sayfasına girerse doğrudan ana sayfaya yönlendirilir.
 - Mobil uyum: giriş alanları 16px (iPhone'da dokununca sayfa büyümesi önlendi), tablet ve
   yatay ekranda tek sütun düzen, çentikli ekran güvenli alanları, şifreyi göster/gizle düğmesi.
+
+v1.8.3 — Mobil "Diğer" menüsü:
+- Menü kapalıyken tam gizlenmiyor, alt gezinme çubuğunun üzerinde yarım kalıp dokunmaları
+  engelliyordu (özellikle yönetici rolünde, uzun listede). Artık kapalıyken tamamen gizli.
+- Kısa ekranlarda/yatay konumda menü içinde kaydırma; açıkken arka sayfa kaymaz.
+- Menü aşağı kaydırılarak kapatılabilir; geri tuşuyla dönüldüğünde açık kalmaz.

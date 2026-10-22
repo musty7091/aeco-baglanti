@@ -217,3 +217,11 @@ body.dark .timeline-item:before{border-left-color:#3a4047}
 .login-card h2{font-size:26px;margin-top:26px}
 .login-note{margin-top:22px}
 }
+
+/* Mobil "Diğer" menüsü — kapalıyken tamamen gizli, uzun listede kaydırılabilir (v1.8.3) */
+@media(max-width:760px){
+.mobile-more{bottom:8px;max-height:calc(100vh - 24px - env(safe-area-inset-top));max-height:calc(100dvh - 24px - env(safe-area-inset-top));overflow-y:auto;overscroll-behavior:contain;transform:translateY(calc(100% + 16px));visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s}
+.mobile-more.open{bottom:8px;transform:translateY(0);visibility:visible;transition:transform .25s ease}
+.mobile-more.dragging{transition:none}
+.sheet-handle{height:5px;margin-bottom:10px;touch-action:none}
+}
