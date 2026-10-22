@@ -34,16 +34,11 @@
     </div>
   </div>
 
-  <div
-    class="form-panel invoice-document-panel"
-    data-scanner-panel
-    data-scanner-url="{{ scanner.service_url }}"
-    data-scanner-token="{{ scanner.token }}"
-  >
+  <div class="form-panel invoice-document-panel">
     <div class="section-head">
       <div>
         <h2>Satış Faturası Eki</h2>
-        <p>PDF veya görsel yükleyin; Windows bilgisayarda fiziksel tarayıcıyı da kullanabilirsiniz.</p>
+        <p>Taranmış faturayı PDF veya görsel olarak yükleyin; telefonda kamerayla da çekebilirsiniz.</p>
       </div>
     </div>
 
@@ -58,19 +53,13 @@
         </span>
       </div>
       <div class="document-upload-actions">
-        <label class="btn btn-light document-file-button" for="{{ form.invoice_attachment.id_for_label }}">
+        <label class="btn btn-primary document-file-button" for="{{ form.invoice_attachment.id_for_label }}">
           Dosyadan Seç
         </label>
-        <button type="button" class="btn btn-primary" data-open-scanner>
-          Tarayıcıdan Tara
-        </button>
       </div>
       <div class="native-file-input">{{ form.invoice_attachment }}</div>
     </div>
     {% for error in form.invoice_attachment.errors %}<em class="document-error">{{ error }}</em>{% endfor %}
-    <div class="scanner-mobile-note" data-scanner-mobile-note hidden>
-      Fiziksel WIA tarama yalnızca tarayıcının bağlı olduğu Windows bilgisayarda kullanılabilir. Telefonda Dosyadan Seç ile dosya veya kamera kullanabilirsiniz.
-    </div>
   </div>
 
   <div class="form-panel">
@@ -141,38 +130,4 @@
     <button class="btn btn-primary">Bağlantıyı Kaydet</button>
   </div>
 </form>
-
-<div class="scanner-modal" data-scanner-modal hidden>
-  <div class="scanner-modal-backdrop" data-close-scanner></div>
-  <section class="scanner-dialog" role="dialog" aria-modal="true" aria-labelledby="scanner-title">
-    <div class="scanner-dialog-head">
-      <div>
-        <h2 id="scanner-title">Fiziksel Tarayıcıdan Tara</h2>
-        <p>Her sayfayı ayrı ayrı tarayın; tamamlandığında tek PDF olarak faturaya eklenecektir.</p>
-      </div>
-      <button type="button" class="icon-btn" data-close-scanner aria-label="Kapat">×</button>
-    </div>
-
-    <div class="scanner-status" data-scanner-status>Tarayıcı servisine bağlanılıyor…</div>
-
-    <div class="field scanner-device-field">
-      <label for="scanner-device-select">Tarayıcı</label>
-      <select id="scanner-device-select" class="form-control" data-scanner-device disabled>
-        <option value="">Tarayıcılar yükleniyor…</option>
-      </select>
-    </div>
-
-    <div class="scanner-progress-card">
-      <span>Taranan sayfa</span>
-      <strong data-scanner-page-count>0</strong>
-      <small>Yeni sayfa için evrakı değiştirip “Sayfa Tara” düğmesine basın.</small>
-    </div>
-
-    <div class="scanner-dialog-actions">
-      <button type="button" class="btn btn-light" data-close-scanner>Vazgeç</button>
-      <button type="button" class="btn btn-dark" data-scan-page disabled>Sayfa Tara</button>
-      <button type="button" class="btn btn-primary" data-finish-scan disabled>PDF Oluştur ve Ekle</button>
-    </div>
-  </section>
-</div>
 {% endblock %}

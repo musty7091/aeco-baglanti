@@ -1,6 +1,6 @@
 # PythonAnywhere Kurulum Notu
 
-Bu proje öncelikle **Windows yerel ağ uygulaması** olarak tasarlanmıştır. PythonAnywhere üzerinde Django uygulaması çalıştırılabilir; ancak Windows'a bağlı fiziksel evrak tarayıcısına WIA üzerinden erişilemez. Bulut kullanımında yalnızca **Dosyadan Seç** yükleme yöntemi kullanılmalıdır.
+Canlı uygulama PythonAnywhere üzerinde çalışır. Bu not ilk kurulumu ve güncelleme adımlarını anlatır.
 
 ## Kurulum
 
@@ -13,8 +13,6 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-`pywin32` yalnızca Windows'ta kurulur; Linux tabanlı PythonAnywhere ortamında otomatik olarak atlanır.
-
 4. `.env.example` dosyasını `.env` adıyla kopyalayın ve güvenli ayarları yapın.
 5. Temiz veritabanını oluşturun:
 
@@ -25,7 +23,7 @@ python manage.py setup_aeco --username admin --email EMAIL_ADRESINIZ
 python manage.py check --deploy
 ```
 
-Bu sürüm tek ve güncel `operations/migrations/0001_initial.py` migrasyonunu kullanır. Eski demo veritabanını yeni şemaya taşımaya çalışmayın.
+Migrasyonlar `operations/migrations/` altındadır; `migrate` hepsini sırayla uygular.
 
 ## WSGI
 
@@ -38,8 +36,12 @@ PythonAnywhere Web ekranında aşağıdaki eşleştirmeleri tanımlayın:
 - `/static/` → proje içindeki `staticfiles` klasörü
 - `/media/` → proje içindeki `media` klasörü
 
-## Önemli sınırlama
+## Güncelleme
 
-- **Tarayıcıdan Tara** özelliği yalnızca Windows bilgisayarda çalışan `scanner_service.py` ve yerel WIA cihazlarıyla kullanılabilir.
-- PythonAnywhere, telefon veya başka bir uzak sunucu fiziksel Windows tarayıcısına doğrudan erişemez.
-- PDF/JPG/JPEG/PNG dosyaları normal dosya yükleme alanından eklenebilir.
+Her güncellemeden önce veritabanı yedeği alın. PythonAnywhere Bash konsolunda:
+
+```bash
+P=~/.virtualenvs/aeco-baglanti/bin/python; cd ~/aeco-baglanti && B=backups/db_$(date +%Y%m%d_%H%M%S).sqlite3 && mkdir -p backups && sqlite3 db.sqlite3 ".backup $B" && sqlite3 "$B" 'PRAGMA integrity_check;' && git status --short && git pull --ff-only origin main && $P manage.py check && $P manage.py migrate --plan && $P manage.py migrate && $P manage.py collectstatic --noinput | tail -1 && touch /var/www/aecobaglanti_pythonanywhere_com_wsgi.py && echo DEPLOY_OK
+```
+
+`git status --short` boş olmalıdır; sunucuda elle değiştirilmiş dosya varsa önce onları inceleyin. `backups/` klasöründe son birkaç yedeği tutup eskileri silebilirsiniz.

@@ -1,3 +1,47 @@
+AECO Bağlantılı Satış — Sürüm Notları
+(eskiden yeniye; yeni sürümler sona eklenir)
+
+------------------------------------------------------------------------
+
+AECO Bağlantılı Satış v1.7.0
+
+- Müşteri kodu MUS-00001 biçiminde otomatik ve kilitli sayaçla üretilir.
+- Müşteri fatura/teslimat adresi alanları kaldırıldı.
+- Bağlantılı satış son teslim tarihi kaldırıldı.
+- KDV dâhil fatura genel toplamı canlı ve sunucu taraflı hesaplanır.
+- Bağlantı listesi, detay ve PDF çıktısına genel toplam eklendi.
+- Profesyonel fatura eki paneli eklendi.
+- Ücretsiz yerel Windows WIA tarama servisi eklendi.
+- Çok sayfalı tarama tek PDF'e dönüştürülüp forma otomatik eklenir.
+- Türkçe kaynak metinleri UTF-8 olarak temizlendi.
+- Güncel tek 0001_initial.py migrasyonu oluşturuldu.
+
+------------------------------------------------------------------------
+
+AECO Bağlantılı Satış v1.7.1
+
+- Depo kayıtlarında Düzenle işlemi görünür ve erişilebilir düğme haline getirildi.
+- Depo Aktif/Pasif işlemi açık eylem metni ve onay penceresiyle düzeltildi.
+- Yönetim rolüne depo düzenleme ve durum değiştirme yetkisi verildi.
+- Düzenleme ekranındaki Vazgeç düğmesi güvenilir biçimde depo listesine döner.
+- Sevk ve teslimat PDF'leri A4 güvenli baskı alanına alındı.
+- Tablo genişlikleri, imza/QR alanı ve teslimat kanıtları taşmayı önleyecek şekilde daraltıldı.
+- Teslimat kanıtları gerektiğinde sonraki sayfaya bütün blok halinde aktarılır.
+
+------------------------------------------------------------------------
+
+AECO Bağlantılı Satış v1.7.2
+
+Bu sürümde gece modu görünümü iyileştirildi.
+
+Yapılan düzeltmeler:
+- İşlem Geçmişi ekranında gece modunda başlık, satır metni ve kullanıcı bilgisinin kontrastı artırıldı.
+- Gece modunda beyaz görünen detay kutuları koyu temaya uyarlandı.
+- Arama kutusu, placeholder, tema düğmesi ve sayfalama bağlantıları gece modunda daha okunur hale getirildi.
+- CSS ve statik dosya sürüm numarası güncellendi.
+
+------------------------------------------------------------------------
+
 AECO Bağlantılı Satış v1.8.0
 
 Bu sürümde sevkiyat akışı sadeleştirildi ve tek dosyalık bağlantı raporu eklendi.
@@ -55,3 +99,11 @@ v1.8.4 — Uçtan uca kontrol düzeltmeleri:
   hatası vermez; bilinmeyen şablon adresi 404 döner.
 - Müşteri formunda satış temsilcileri kullanıcı adı yerine ad soyad ile listelenir.
 - 0003 veritabanı geçişi yalnızca dosya adı kuralını kaydeder; tabloda değişiklik yapmaz.
+
+v1.8.5 — Kontrollü temizlik:
+- Fiziksel tarayıcı (Windows WIA) özelliği kaldırıldı: canlı sitede çalışamıyordu. Fatura eki
+  "Dosyadan Seç" ile (telefonda kamerayla) yüklenir.
+- Windows'ta yerel çalıştırma dosyaları (RUN_/SETUP_/MOBIL_/DEMO_/TEST_WINDOWS .bat vb.),
+  eski test raporu ve eski örnek PDF'ler kaldırıldı. Demo verisi: manage.py demo_aeco.
+- Sürüm notları bu tek dosyada toplandı.
+- Testler artık önceden collectstatic çalıştırılmasını gerektirmez.

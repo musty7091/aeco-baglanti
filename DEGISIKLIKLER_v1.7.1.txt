@@ -1,9 +1,0 @@
-AECO Bağlantılı Satış v1.7.1
-
-- Depo kayıtlarında Düzenle işlemi görünür ve erişilebilir düğme haline getirildi.
-- Depo Aktif/Pasif işlemi açık eylem metni ve onay penceresiyle düzeltildi.
-- Yönetim rolüne depo düzenleme ve durum değiştirme yetkisi verildi.
-- Düzenleme ekranındaki Vazgeç düğmesi güvenilir biçimde depo listesine döner.
-- Sevk ve teslimat PDF'leri A4 güvenli baskı alanına alındı.
-- Tablo genişlikleri, imza/QR alanı ve teslimat kanıtları taşmayı önleyecek şekilde daraltıldı.
-- Teslimat kanıtları gerektiğinde sonraki sayfaya bütün blok halinde aktarılır.

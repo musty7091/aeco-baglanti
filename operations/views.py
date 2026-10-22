@@ -33,7 +33,6 @@ from .permissions import (
     report_access_required, role_required, shipment_access_required,
     shipments_for_user,
 )
-from .scanner import scanner_client_config
 from .services import audit, create_order_from_request, deliver_shipment, next_document_number, parse_quantity
 
 PER_PAGE=25
@@ -221,7 +220,7 @@ def connection_create(request):
         with transaction.atomic():
             obj=form.save(commit=False);obj.number=next_document_number('connection');obj.created_by=request.user;obj.status=ConnectionSale.Status.PENDING;obj.save();formset.instance=obj;formset.save()
         audit(request,'CREATE',obj,{'invoice_no':obj.invoice_no});messages.success(request,'Bağlantılı satış kaydı oluşturuldu ve onaya gönderildi.');return redirect('connection_detail',obj.pk)
-    return render(request,'operations/connection_form.html',{'form':form,'formset':formset,'title':'Yeni Bağlantılı Satış','scanner':scanner_client_config()})
+    return render(request,'operations/connection_form.html',{'form':form,'formset':formset,'title':'Yeni Bağlantılı Satış'})
 
 @manage_required
 def connection_edit(request,pk):
@@ -232,7 +231,7 @@ def connection_edit(request,pk):
     if request.method=='POST' and form.is_valid() and formset.is_valid():
         with transaction.atomic(): form.save();formset.save()
         audit(request,'UPDATE',obj);messages.success(request,'Bağlantı güncellendi.');return redirect('connection_detail',pk)
-    return render(request,'operations/connection_form.html',{'form':form,'formset':formset,'title':'Bağlantıyı Düzenle','object':obj,'scanner':scanner_client_config()})
+    return render(request,'operations/connection_form.html',{'form':form,'formset':formset,'title':'Bağlantıyı Düzenle','object':obj})
 
 @customer_access_required
 def connection_detail(request,pk):

@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import sys
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -76,9 +77,11 @@ STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
 }
+if sys.argv[1:2] == ['test']:
+    # Testler önceden collectstatic çalıştırılmasını gerektirmesin.
+    STORAGES['staticfiles'] = {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-SCANNER_SERVICE_URL = os.getenv('SCANNER_SERVICE_URL', 'http://127.0.0.1:8765')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'

@@ -45,8 +45,4 @@ Desktop.ini
 *.tmp
 *.temp
 ~$*
-# Yerel çalışma zamanı ve tarama geçici dosyaları
-runtime/
 
-# Yerel kurulum işaretçisi
-.aeco_v170_clean_schema
